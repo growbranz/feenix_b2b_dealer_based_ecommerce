@@ -27,7 +27,6 @@ const floatingParts = [
   { icon: ZapIcon, position: { top: "40%", left: "20%" }, delay: 0.8 },
   { icon: Monitor, position: { top: "15%", right: "25%" }, delay: 1 },
 ]
-
 export function Hero() {
   return (
     <section className="relative min-h-[80vh] flex items-center pt-32 lg:pt-36 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5">
