@@ -613,6 +613,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 -- 4. INDEXES
 -- ----------------------------------------------------------------------------
 CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_product_location_unique ON inventory(product_id, COALESCE(dealer_id, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(warehouse_id, '00000000-0000-0000-0000-000000000000'::uuid));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_low_stock_alerts_product_location_unique ON low_stock_alerts(product_id, COALESCE(dealer_id, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(warehouse_id, '00000000-0000-0000-0000-000000000000'::uuid));
 
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
@@ -830,8 +831,8 @@ BEGIN
       )
       ON CONFLICT (
         product_id,
-        COALESCE(dealer_id, '00000000-0000-0000-0000-000000000000'::uuid),
-        COALESCE(warehouse_id, '00000000-0000-0000-0000-000000000000'::uuid)
+        (COALESCE(dealer_id, '00000000-0000-0000-0000-000000000000'::uuid)),
+        (COALESCE(warehouse_id, '00000000-0000-0000-0000-000000000000'::uuid))
       )
       DO UPDATE SET
         alert_level = EXCLUDED.alert_level,
@@ -865,12 +866,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO inventory (product_id, dealer_id, available_stock, reserved_stock, low_stock_limit)
   VALUES (NEW.id, NEW.dealer_id, NEW.stock, 0, 10)
-  ON CONFLICT (
-    product_id,
-    COALESCE(dealer_id, '00000000-0000-0000-0000-000000000000'::uuid),
-    COALESCE(warehouse_id, '00000000-0000-0000-0000-000000000000'::uuid)
-  )
-  DO NOTHING;
+  ON CONFLICT DO NOTHING;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -1280,6 +1276,8 @@ CREATE POLICY payment_audit_logs_admin_write ON payment_audit_logs
 CREATE POLICY inventory_admin_all ON inventory FOR ALL TO authenticated USING (is_admin());
 CREATE POLICY inventory_dealer_select ON inventory
   FOR SELECT USING (is_dealer() AND dealer_id = auth.uid());
+CREATE POLICY inventory_dealer_insert ON inventory
+  FOR INSERT TO authenticated WITH CHECK (is_dealer() AND dealer_id = auth.uid());
 
 CREATE POLICY inventory_ledger_admin_all ON inventory_ledger FOR ALL TO authenticated USING (is_admin());
 CREATE POLICY inventory_ledger_dealer_select ON inventory_ledger
@@ -1298,6 +1296,10 @@ CREATE POLICY inventory_transfers_dealer_insert ON inventory_transfers
 CREATE POLICY low_stock_alerts_admin_all ON low_stock_alerts FOR ALL TO authenticated USING (is_admin());
 CREATE POLICY low_stock_alerts_dealer_select ON low_stock_alerts
   FOR SELECT USING (is_dealer() AND dealer_id = auth.uid());
+CREATE POLICY low_stock_alerts_dealer_write ON low_stock_alerts
+  FOR INSERT, UPDATE, DELETE TO authenticated
+  USING (is_dealer() AND dealer_id = auth.uid())
+  WITH CHECK (is_dealer() AND dealer_id = auth.uid());
 
 -- Warehouses
 CREATE POLICY warehouses_admin_all ON warehouses FOR ALL TO authenticated USING (is_admin());
