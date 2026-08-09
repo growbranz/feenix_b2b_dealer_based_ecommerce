@@ -49,10 +49,13 @@ const statusLabel = (status: RecentProductStatus) =>
 
 interface ProductsTableProps {
   products: RecentProduct[]
-  onRowClick?: (product: RecentProduct) => void
+  onView: (product: RecentProduct) => void
+  onEdit: (product: RecentProduct) => void
+  onDuplicate: (product: RecentProduct) => void
+  onDelete: (product: RecentProduct) => void
 }
 
-export function ProductsTable({ products, onRowClick }: ProductsTableProps) {
+export function ProductsTable({ products, onView, onEdit, onDuplicate, onDelete }: ProductsTableProps) {
   const [search, setSearch] = React.useState("")
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
   const [view, setView] = React.useState<"table" | "grid">("table")
@@ -273,14 +276,14 @@ export function ProductsTable({ products, onRowClick }: ProductsTableProps) {
                       </div>
                       <div className="max-w-[200px]">
                         <p className="font-semibold text-slate-900">{product.title}</p>
-                        <p className="text-xs text-slate-500">SKU: {product.id}</p>
+                        <p className="text-xs text-slate-500">SKU: {product.sku || product.id}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">{product.brand}</td>
                   <td className="px-6 py-4 text-sm text-slate-600">{product.model}</td>
                   <td className="px-6 py-4 text-sm text-slate-600">{product.category}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-slate-900">₹1,299</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-slate-900">₹{product.price ?? 0}</td>
                   <td className="px-6 py-4 text-sm text-slate-600">{product.stock}</td>
                   <td className="px-6 py-4">
                     <Badge
@@ -301,19 +304,19 @@ export function ProductsTable({ products, onRowClick }: ProductsTableProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={() => onRowClick?.(product)}>
+                        <DropdownMenuItem onClick={() => onView(product)}>
                           <Eye className="mr-2 h-4 w-4" />
                           View
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEdit(product)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onDuplicate(product)}>
                           <Copy className="mr-2 h-4 w-4" />
                           Duplicate
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem className="text-red-600" onClick={() => onDelete(product)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>
@@ -381,7 +384,7 @@ export function ProductsTable({ products, onRowClick }: ProductsTableProps) {
                   variant="outline"
                   size="sm"
                   className="flex-1 border-slate-200 text-slate-700 hover:bg-slate-100"
-                  onClick={() => onRowClick?.(product)}
+                  onClick={() => onView(product)}
                 >
                   View
                 </Button>
@@ -392,15 +395,15 @@ export function ProductsTable({ products, onRowClick }: ProductsTableProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onEdit(product)}>
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDuplicate(product)}>
                       <Copy className="mr-2 h-4 w-4" />
                       Duplicate
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">
+                    <DropdownMenuItem className="text-red-600" onClick={() => onDelete(product)}>
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>

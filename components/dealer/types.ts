@@ -28,6 +28,8 @@ export interface RecentProduct {
   brand: string
   model: string
   category: string
+  price?: number
+  sku?: string
   stock: number
   status: RecentProductStatus
 }

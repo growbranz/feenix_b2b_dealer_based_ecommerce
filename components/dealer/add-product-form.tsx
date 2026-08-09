@@ -44,6 +44,8 @@ interface AddProductFormProps {
   brands?: Option[]
   models?: Option[]
   isLoading?: boolean
+  initialValues?: any
+  mode?: "add" | "edit"
 }
 
 export function AddProductForm({
@@ -53,14 +55,16 @@ export function AddProductForm({
   brands = [],
   models = [],
   isLoading = false,
+  initialValues,
+  mode = "add",
 }: AddProductFormProps) {
   const [currentStep, setCurrentStep] = React.useState(0)
   const [completedSteps, setCompletedSteps] = React.useState<Set<number>>(new Set())
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [isSavingDraft, setIsSavingDraft] = React.useState(false)
 
-  const methods = useForm<any>({
-    defaultValues: {
+  const initialDefaultValues = React.useMemo(
+    () => ({
       category_id: "",
       brand_id: "",
       model_id: "",
@@ -79,8 +83,21 @@ export function AddProductForm({
       warehouse: "",
       availability: "in_stock",
       images: [],
-    },
+    }),
+    []
+  )
+
+  const methods = useForm<any>({
+    defaultValues: initialValues || initialDefaultValues,
   })
+
+  const hasReset = React.useRef(false)
+  React.useEffect(() => {
+    if (initialValues && !hasReset.current) {
+      methods.reset(initialValues)
+      hasReset.current = true
+    }
+  }, [initialValues, methods])
 
   const { watch, trigger } = methods
   const formValues = watch()
@@ -463,7 +480,9 @@ export function AddProductForm({
             ) : (
               <Button type="submit" disabled={isSubmitting}>
                 <Send className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Publishing..." : "Publish Product"}
+                {isSubmitting
+                  ? mode === "edit" ? "Saving..." : "Publishing..."
+                  : mode === "edit" ? "Save Changes" : "Publish Product"}
               </Button>
             )}
           </div>
