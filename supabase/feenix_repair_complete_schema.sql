@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   state VARCHAR(100),
   country VARCHAR(100) DEFAULT 'India',
   pincode VARCHAR(10),
+  business_description TEXT,
   profile_image TEXT,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -1414,6 +1415,32 @@ CREATE POLICY chat_attachments_insert_sender ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'chat-attachments'
     AND auth.role() = 'authenticated'
+  );
+
+-- Dealer logo storage
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('dealer-logos', 'dealer-logos', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY dealer_logos_select_own ON storage.objects
+  FOR SELECT USING (
+    bucket_id = 'dealer-logos'
+    AND auth.role() = 'authenticated'
+    AND (auth.uid()::text = split_part(name, '/', 1) OR is_admin())
+  );
+
+CREATE POLICY dealer_logos_insert_own ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'dealer-logos'
+    AND auth.role() = 'authenticated'
+    AND auth.uid()::text = split_part(name, '/', 1)
+  );
+
+CREATE POLICY dealer_logos_delete_own ON storage.objects
+  FOR DELETE USING (
+    bucket_id = 'dealer-logos'
+    AND auth.role() = 'authenticated'
+    AND (auth.uid()::text = split_part(name, '/', 1) OR is_admin())
   );
 
 -- ----------------------------------------------------------------------------

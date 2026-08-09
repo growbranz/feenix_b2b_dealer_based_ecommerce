@@ -5,17 +5,23 @@ import { motion } from "framer-motion"
 import { Upload, X, Image as ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/client"
 
 interface ImageUploadProps {
   value?: string | null
   onChange: (url: string | null) => void
+  dealerId: string
   className?: string
   disabled?: boolean
 }
 
+const MAX_SIZE = 5 * 1024 * 1024
+const ACCEPTED_TYPES = ["image/png", "image/jpeg"]
+
 export function ImageUpload({
   value,
   onChange,
+  dealerId,
   className,
   disabled = false,
 }: ImageUploadProps) {
@@ -36,38 +42,63 @@ export function ImageUpload({
     e.preventDefault()
     setIsDragging(false)
     const file = e.dataTransfer.files[0]
-    if (file) handleFileUpload(file)
+    if (file) uploadToSupabase(file)
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) handleFileUpload(file)
+    if (file) uploadToSupabase(file)
   }
 
-  const handleFileUpload = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file")
+  async function uploadToSupabase(file: File) {
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      alert("Please upload a PNG or JPG image")
+      return
+    }
+
+    if (file.size > MAX_SIZE) {
+      alert("Image must be smaller than 5MB")
       return
     }
 
     setIsUploading(true)
     try {
-      // TODO: Implement Supabase storage upload
-      // For now, create a local preview
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        onChange(reader.result as string)
+      const supabase = createClient()
+
+      if (value && value.includes("/dealer-logos/")) {
+        const oldPath = value.split("/dealer-logos/")[1].split("?")[0]
+        await supabase.storage.from("dealer-logos").remove([oldPath])
       }
-      reader.readAsDataURL(file)
-    } catch (error) {
+
+      const ext = file.type === "image/png" ? "png" : "jpg"
+      const path = `${dealerId}/logo-${Date.now()}.${ext}`
+
+      const { error } = await supabase.storage
+        .from("dealer-logos")
+        .upload(path, file, { contentType: file.type, cacheControl: "3600" })
+
+      if (error) throw error
+
+      const { data } = supabase.storage.from("dealer-logos").getPublicUrl(path)
+      onChange(data.publicUrl)
+    } catch (error: any) {
       console.error("Upload error:", error)
-      alert("Failed to upload image")
+      alert(error?.message || "Failed to upload image")
     } finally {
       setIsUploading(false)
     }
   }
 
-  const handleRemove = () => {
+  const handleRemove = async () => {
+    if (value && value.includes("/dealer-logos/")) {
+      const oldPath = value.split("/dealer-logos/")[1].split("?")[0]
+      try {
+        const supabase = createClient()
+        await supabase.storage.from("dealer-logos").remove([oldPath])
+      } catch (error) {
+        console.error("Remove error:", error)
+      }
+    }
     onChange(null)
     if (inputRef.current) {
       inputRef.current.value = ""
@@ -79,7 +110,7 @@ export function ImageUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/png, image/jpeg"
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled}

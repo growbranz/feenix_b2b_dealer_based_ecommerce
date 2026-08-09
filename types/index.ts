@@ -51,6 +51,7 @@ export interface Profile {
   state: string | null
   country: string
   pincode: string | null
+  business_description: string | null
   profile_image: string | null
   is_active: boolean
   created_at: string

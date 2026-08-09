@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -14,72 +15,86 @@ import { Separator } from "@/components/ui/separator"
 import { ImageUpload } from "@/components/dealer/image-upload"
 import { ProfileCompletionCard } from "@/components/dealer/profile-completion-card"
 import { dealerProfileSchema, type DealerProfileFormData } from "@/lib/validations/dealer.validation"
+import { updateDealerProfile } from "@/lib/dealer/actions"
 import { useDealer } from "@/components/dealer/dealer-provider"
+import type { Profile } from "@/types"
+
+function getDefaultValues(profile: Profile | null): DealerProfileFormData {
+  return {
+    business_name: profile?.business_name || "",
+    gst_number: profile?.gst_number || "",
+    phone: profile?.phone || "",
+    email: profile?.email || "",
+    address: profile?.address || "",
+    city: profile?.city || "",
+    state: profile?.state || "",
+    country: profile?.country || "India",
+    pincode: profile?.pincode || "",
+    business_description: profile?.business_description || "",
+    profile_image: profile?.profile_image || undefined,
+  }
+}
 
 export default function DealerProfilePage() {
+  const router = useRouter()
   const dealer = useDealer()
   const [isSaving, setIsSaving] = React.useState(false)
-  const [hasChanges, setHasChanges] = React.useState(false)
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
 
   const form = useForm<DealerProfileFormData>({
     resolver: zodResolver(dealerProfileSchema),
-    defaultValues: {
-      business_name: dealer?.business_name || "",
-      gst_number: dealer?.gst_number || "",
-      phone: dealer?.phone || "",
-      email: dealer?.email || "",
-      address: dealer?.address || "",
-      city: dealer?.city || "",
-      state: dealer?.state || "",
-      country: dealer?.country || "India",
-      pincode: dealer?.pincode || "",
-      business_description: "",
-      profile_image: dealer?.profile_image || undefined,
-    },
+    defaultValues: getDefaultValues(dealer),
   })
 
-  const { watch } = form
+  const { watch, formState } = form
   const formValues = watch()
 
   React.useEffect(() => {
-    setHasChanges(true)
-  }, [formValues])
+    if (dealer) {
+      form.reset(getDefaultValues(dealer))
+    }
+  }, [dealer, form])
 
   const onSubmit = async (data: DealerProfileFormData) => {
     setIsSaving(true)
+    setSuccessMessage(null)
+    setErrorMessage(null)
     try {
-      // TODO: Implement Supabase update
-      console.log("Saving profile:", data)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setHasChanges(false)
-      alert("Profile saved successfully!")
+      const result = await updateDealerProfile(data)
+      if (result.success) {
+        setSuccessMessage(result.message)
+        router.refresh()
+      } else {
+        setErrorMessage(result.message)
+      }
     } catch (error) {
       console.error("Save error:", error)
-      alert("Failed to save profile")
+      setErrorMessage("An unexpected error occurred. Please try again.")
     } finally {
       setIsSaving(false)
     }
   }
 
   const handleCancel = () => {
-    form.reset()
-    setHasChanges(false)
+    form.reset(getDefaultValues(dealer))
+    setSuccessMessage(null)
+    setErrorMessage(null)
   }
 
   const completionPercentage = React.useMemo(() => {
-    const fields = [
+    const requiredFields = [
       formValues.business_name,
-      formValues.gst_number,
       formValues.phone,
       formValues.email,
       formValues.address,
       formValues.city,
       formValues.state,
+      formValues.country,
       formValues.pincode,
-      formValues.profile_image,
     ]
-    const filled = fields.filter((f) => f && f.length > 0).length
-    return Math.round((filled / fields.length) * 100)
+    const filled = requiredFields.filter((f) => typeof f === "string" && f.trim().length > 0).length
+    return Math.min(100, Math.round((filled / requiredFields.length) * 100))
   }, [formValues])
 
   return (
@@ -100,6 +115,17 @@ export default function DealerProfilePage() {
         </div>
       </motion.div>
 
+      {successMessage && (
+        <div className="rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700 border border-emerald-200">
+          {successMessage}
+        </div>
+      )}
+      {errorMessage && (
+        <div className="rounded-xl bg-rose-50 p-4 text-sm font-medium text-rose-700 border border-rose-200">
+          {errorMessage}
+        </div>
+      )}
+
       <motion.form
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -117,6 +143,8 @@ export default function DealerProfilePage() {
               <ImageUpload
                 value={formValues.profile_image || null}
                 onChange={(url) => form.setValue("profile_image", url || undefined)}
+                dealerId={dealer?.id || ""}
+                disabled={!dealer}
               />
             </CardContent>
           </Card>
@@ -296,12 +324,12 @@ export default function DealerProfilePage() {
             type="button"
             variant="outline"
             onClick={handleCancel}
-            disabled={!hasChanges || isSaving}
+            disabled={!formState.isDirty || isSaving}
           >
             <X className="mr-2 h-4 w-4" />
             Cancel
           </Button>
-          <Button type="submit" disabled={!hasChanges || isSaving}>
+          <Button type="submit" disabled={!formState.isDirty || isSaving}>
             <Save className="mr-2 h-4 w-4" />
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
