@@ -15,7 +15,7 @@ export default async function DealerInventoryPage() {
   ])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="My Inventory"
         description="Monitor and manage your stock levels"
