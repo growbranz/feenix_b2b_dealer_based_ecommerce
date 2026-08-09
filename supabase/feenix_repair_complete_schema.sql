@@ -1278,10 +1278,16 @@ CREATE POLICY inventory_dealer_select ON inventory
   FOR SELECT USING (is_dealer() AND dealer_id = auth.uid());
 CREATE POLICY inventory_dealer_insert ON inventory
   FOR INSERT TO authenticated WITH CHECK (is_dealer() AND dealer_id = auth.uid());
+CREATE POLICY inventory_dealer_update ON inventory
+  FOR UPDATE TO authenticated
+  USING (is_dealer() AND dealer_id = auth.uid())
+  WITH CHECK (is_dealer() AND dealer_id = auth.uid());
 
 CREATE POLICY inventory_ledger_admin_all ON inventory_ledger FOR ALL TO authenticated USING (is_admin());
 CREATE POLICY inventory_ledger_dealer_select ON inventory_ledger
   FOR SELECT USING (is_dealer() AND dealer_id = auth.uid());
+CREATE POLICY inventory_ledger_dealer_insert ON inventory_ledger
+  FOR INSERT TO authenticated WITH CHECK (is_dealer() AND dealer_id = auth.uid());
 
 CREATE POLICY inventory_reservations_admin_all ON inventory_reservations FOR ALL TO authenticated USING (is_admin());
 CREATE POLICY inventory_reservations_dealer_select ON inventory_reservations

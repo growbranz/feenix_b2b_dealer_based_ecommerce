@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { slugify } from "@/lib/utils"
 import { AddProductForm } from "@/components/dealer/add-product-form"
+import { adjustStock, ensureInventoryForProduct } from "@/lib/inventory/actions"
 
 interface Option {
   id: string
@@ -121,7 +122,6 @@ export default function ProductDetailPage() {
         description: data.description,
         price: data.price,
         bulk_price: typeof data.bulk_price === "number" && !Number.isNaN(data.bulk_price) ? data.bulk_price : null,
-        stock: data.stock,
         minimum_order: data.minimum_order,
         warranty: data.warranty || null,
         status: availabilityToStatus(data.availability),
@@ -136,6 +136,20 @@ export default function ProductDetailPage() {
 
       if (error) {
         throw error
+      }
+
+      const originalStock = Math.max(0, Number.parseInt(String(product?.stock ?? 0), 10) || 0)
+      const newStock = Math.max(0, Number.parseInt(String(data.stock ?? 0), 10) || 0)
+      if (product && originalStock !== newStock) {
+        await ensureInventoryForProduct(productId, user.id, originalStock)
+        await adjustStock({
+          productId,
+          dealerId: user.id,
+          adjustmentType: "set",
+          quantity: newStock,
+          movementType: "ADJUSTMENT",
+          reason: "Stock updated from product edit",
+        })
       }
 
       console.log("Product updated:", updated)

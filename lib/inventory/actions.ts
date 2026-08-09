@@ -13,13 +13,18 @@ async function getInventoryRow(
   warehouseId?: string | null
 ): Promise<Inventory | null> {
   const supabase: any = await createServerClient()
-  const { data, error } = await supabase
-    .from("inventory")
-    .select("*")
-    .eq("product_id", productId)
-    .eq("dealer_id", dealerId || null)
-    .eq("warehouse_id", warehouseId || null)
-    .single()
+  let query = supabase.from("inventory").select("*").eq("product_id", productId)
+  if (dealerId) {
+    query = query.eq("dealer_id", dealerId)
+  } else {
+    query = query.is("dealer_id", null)
+  }
+  if (warehouseId) {
+    query = query.eq("warehouse_id", warehouseId)
+  } else {
+    query = query.is("warehouse_id", null)
+  }
+  const { data, error } = await query.single()
 
   if (error) {
     if (error.code === "PGRST116") return null
@@ -109,6 +114,40 @@ async function insertLedger(
     reason,
   })
   if (error) throw error
+}
+
+export async function ensureInventoryForProduct(
+  productId: string,
+  dealerId: string,
+  initialStock: number
+): Promise<Inventory> {
+  const userProfile = await getCurrentUserProfile()
+  if (!userProfile?.user) throw new Error("Unauthorized")
+  if (dealerId !== userProfile.user.id && userProfile.profile?.role !== "ADMIN") {
+    throw new Error("Unauthorized")
+  }
+
+  const existing = await getInventoryRow(productId, dealerId, null)
+  if (existing) return existing
+
+  const supabase: any = await createServerClient()
+  const { data, error } = await supabase
+    .from("inventory")
+    .insert({
+      product_id: productId,
+      dealer_id: dealerId,
+      warehouse_id: null,
+      available_stock: initialStock,
+      reserved_stock: 0,
+      low_stock_limit: 10,
+      critical_stock_limit: 5,
+      recommended_reorder_level: 20,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as Inventory
 }
 
 export async function adjustStock(input: StockAdjustmentInput) {
