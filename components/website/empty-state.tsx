@@ -54,17 +54,17 @@ export function EmptyState({
   const Icon = content.icon
 
   return (
-    <div className={`flex flex-col items-center justify-center py-16 px-4 ${className}`}>
-      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-        <Icon className="h-8 w-8 text-muted-foreground" />
+    <div className={`flex flex-col items-center justify-center py-20 px-4 ${className}`}>
+      <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-slate-100 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+        <Icon className="h-10 w-10 text-blue-500" />
       </div>
-      <h2 className="text-2xl font-semibold mb-2">{title || content.title}</h2>
-      <p className="text-muted-foreground text-center max-w-md mb-6">
+      <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">{title || content.title}</h2>
+      <p className="text-slate-500 text-center max-w-md mb-8 leading-relaxed">
         {description || content.description}
       </p>
       {(actionLabel || content.actionLabel) && (
         <Link href={actionHref || content.actionHref!}>
-          <Button>
+          <Button className="rounded-full bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 transition-all">
             {actionLabel || content.actionLabel}
           </Button>
         </Link>

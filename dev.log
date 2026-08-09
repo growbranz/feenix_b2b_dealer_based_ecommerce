@@ -1,0 +1,27 @@
+﻿DEV_DONE
+"""
+DEV_EXIT=1
+DEV_EXIT=1
+DEV_EXIT=1
+
+> feenix-repair@0.1.0 dev
+> next dev -p 3000
+
+npm : Γ¿» Failed to start server
+At line:1 char:1
++ npm run dev -- -p 3000 2>&1 | Out-File -FilePath dev.log -Encoding UT ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Γ¿» Failed to start server:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+[?25h
+DEV_EXIT=1

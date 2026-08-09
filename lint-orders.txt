@@ -1,0 +1,24 @@
+
+C:\Users\FUESTECH\Documents\Feenix_B2B_Repair\feenix-repair\components\admin\orders\order-dashboard.tsx
+  12:30  warning  'CheckCircle2' is defined but never used  @typescript-eslint/no-unused-vars
+  12:51  warning  'Ban' is defined but never used           @typescript-eslint/no-unused-vars
+  12:64  warning  'RotateCcw' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\Users\FUESTECH\Documents\Feenix_B2B_Repair\feenix-repair\components\admin\orders\order-data-table.tsx
+   9:80  warning  'statusColor' is defined but never used          @typescript-eslint/no-unused-vars
+   9:93  warning  'paymentColor' is defined but never used         @typescript-eslint/no-unused-vars
+  27:82  warning  'statusColor' is defined but never used          @typescript-eslint/no-unused-vars
+  40:9   error    'data' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Users\FUESTECH\Documents\Feenix_B2B_Repair\feenix-repair\components\admin\orders\order-detail.tsx
+  7:10  warning  'Textarea' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\FUESTECH\Documents\Feenix_B2B_Repair\feenix-repair\components\dealer\orders\dealer-order-detail.tsx
+   8:10  warning  'Textarea' is defined but never used             @typescript-eslint/no-unused-vars
+  15:37  warning  'Package' is defined but never used              @typescript-eslint/no-unused-vars
+  32:10  warning  'remarks' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  32:19  warning  'setRemarks' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 12 problems (1 error, 11 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

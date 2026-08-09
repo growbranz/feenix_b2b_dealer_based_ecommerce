@@ -57,7 +57,7 @@ export function FAQSection() {
   }
 
   return (
-    <section className="py-24 bg-background">
+    <section className="py-24 bg-white">
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -66,7 +66,7 @@ export function FAQSection() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-slate-600 max-w-2xl mx-auto">
             Find answers to common questions about our platform
           </p>
         </motion.div>
@@ -80,7 +80,7 @@ export function FAQSection() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.05 }}
             >
-              <Card className="border-2 hover:border-accent/50 transition-all duration-300 overflow-hidden">
+              <Card className="border-2 border-slate-200 hover:border-blue-600/50 transition-all duration-300 overflow-hidden">
                 <button
                   onClick={() => toggleFAQ(index)}
                   className="w-full text-left p-6 flex items-center justify-between"
@@ -91,7 +91,7 @@ export function FAQSection() {
                     transition={{ duration: 0.3 }}
                     className="flex-shrink-0"
                   >
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    <ChevronDown className="h-5 w-5 text-slate-500" />
                   </motion.div>
                 </button>
                 <AnimatePresence>
@@ -103,7 +103,7 @@ export function FAQSection() {
                       transition={{ duration: 0.3 }}
                     >
                       <div className="px-6 pb-6 pt-0">
-                        <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
+                        <p className="text-slate-600 leading-relaxed">{faq.answer}</p>
                       </div>
                     </motion.div>
                   )}

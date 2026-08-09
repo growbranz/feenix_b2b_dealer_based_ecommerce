@@ -16,7 +16,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className="py-24 bg-background">
+    <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -25,14 +25,14 @@ export function HowItWorks() {
           className="text-center mb-12"
         >
           <h2 className="text-4xl font-bold font-poppins mb-4">How It Works</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-slate-600 max-w-2xl mx-auto">
             Simple and straightforward process to buy and sell mobile spare parts
           </p>
         </motion.div>
 
         <div className="relative">
           {/* Timeline Line */}
-          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-secondary to-primary -translate-x-1/2" />
+          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-600 via-blue-700 to-blue-600 -translate-x-1/2" />
 
           <div className="space-y-8">
             {steps.map((step, index) => (
@@ -45,13 +45,13 @@ export function HowItWorks() {
                 className={`relative flex items-center ${index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'}`}
               >
                 {/* Step Number */}
-                <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary items-center justify-center text-white font-bold text-lg shadow-lg z-10">
+                <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 items-center justify-center text-white font-bold text-lg shadow-lg z-10">
                   {index + 1}
                 </div>
 
                 {/* Content Card */}
                 <div className={`flex-1 ${index % 2 === 0 ? 'lg:pr-12 lg:text-right' : 'lg:pl-12 lg:text-left'}`}>
-                  <div className="bg-white rounded-2xl p-6 border-2 border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 group">
+                  <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 hover:border-blue-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-600/10 group">
                     <div className={`flex items-center gap-4 ${index % 2 === 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'} mb-4`}>
                       <motion.div
                         whileHover={{ scale: 1.1, rotate: 5 }}
@@ -60,10 +60,10 @@ export function HowItWorks() {
                         <step.icon className="h-7 w-7 text-white" />
                       </motion.div>
                       <div>
-                        <h3 className="font-semibold font-poppins text-xl mb-2 group-hover:text-primary transition-colors">
+                        <h3 className="font-semibold font-poppins text-xl mb-2 group-hover:text-blue-600 transition-colors">
                           {step.title}
                         </h3>
-                        <p className="text-muted-foreground">{step.description}</p>
+                        <p className="text-slate-600">{step.description}</p>
                       </div>
                     </div>
                   </div>
@@ -74,7 +74,7 @@ export function HowItWorks() {
 
                 {/* Arrow Down for Mobile */}
                 <div className="lg:hidden flex justify-center py-2">
-                  <ArrowDown className="h-6 w-6 text-muted-foreground" />
+                  <ArrowDown className="h-6 w-6 text-slate-500" />
                 </div>
               </motion.div>
             ))}
@@ -95,12 +95,12 @@ export function HowItWorks() {
               <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${step.color} flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0`}>
                 {index + 1}
               </div>
-              <div className="flex-1 bg-white rounded-2xl p-4 border-2 border-border">
+              <div className="flex-1 bg-white rounded-2xl p-4 border-2 border-slate-200">
                 <div className="flex items-center gap-3 mb-2">
-                  <step.icon className={`h-5 w-5 text-primary`} />
+                  <step.icon className={`h-5 w-5 text-blue-600`} />
                   <h3 className="font-semibold font-poppins">{step.title}</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">{step.description}</p>
+                <p className="text-sm text-slate-600">{step.description}</p>
               </div>
             </motion.div>
           ))}

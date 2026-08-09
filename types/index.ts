@@ -3,7 +3,39 @@ export type UserRole = 'ADMIN' | 'DEALER'
 export type ProductStatus = 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK'
 export type EnquiryStatus = 'PENDING' | 'ASSIGNED' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED'
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
-export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+export type PaymentStatus =
+  | 'PENDING'
+  | 'CREATED'
+  | 'AUTHORIZED'
+  | 'CAPTURED'
+  | 'PAID'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'REFUNDED'
+  | 'PARTIALLY_REFUNDED'
+
+export type InventoryMovementType =
+  | 'PURCHASE'
+  | 'SALE'
+  | 'RESERVATION'
+  | 'RELEASE'
+  | 'TRANSFER'
+  | 'ADJUSTMENT'
+  | 'RETURN'
+  | 'DAMAGE'
+  | 'LOST'
+
+export type InventoryTransferStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'IN_TRANSIT'
+  | 'COMPLETED'
+  | 'CANCELLED'
+
+export type InventoryAlertLevel = 'CRITICAL' | 'LOW' | 'RECOMMENDED'
+
+export type InventoryReservationStatus = 'RESERVED' | 'DEDUCTED' | 'RELEASED' | 'RETURNED'
 
 // Database table interfaces
 export interface Profile {
@@ -63,6 +95,7 @@ export interface Product {
   model_id: string
   title: string
   slug: string
+  sku: string | null
   description: string | null
   price: number
   bulk_price: number | null
@@ -115,20 +148,134 @@ export interface Order {
 export interface Payment {
   id: string
   order_id: string
+  dealer_id: string | null
+  customer_id: string | null
   razorpay_order_id: string | null
   razorpay_payment_id: string | null
   amount: number
+  gst: number
+  discount: number
+  shipping: number
+  currency: string
   status: PaymentStatus
   payment_method: string | null
+  invoice_id: string | null
+  notes: string | null
   paid_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Invoice {
+  id: string
+  invoice_number: string
+  order_id: string
+  payment_id: string | null
+  dealer_id: string | null
+  customer_id: string | null
+  product_id: string | null
+  title: string | null
+  quantity: number
+  price: number
+  hsn: string | null
+  gst_rate: number
+  gst_amount: number
+  discount: number
+  shipping: number
+  subtotal: number
+  total: number
+  line_items: any
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PaymentAuditLog {
+  id: string
+  payment_id: string | null
+  order_id: string | null
+  action: string
+  actor_id: string | null
+  metadata: any
+  created_at: string
 }
 
 export interface Inventory {
   id: string
   product_id: string
+  dealer_id: string | null
+  warehouse_id: string | null
   available_stock: number
   reserved_stock: number
   low_stock_limit: number
+  critical_stock_limit: number
+  recommended_reorder_level: number
+  updated_at: string
+}
+
+export interface InventoryLedger {
+  id: string
+  product_id: string
+  dealer_id: string | null
+  warehouse_id: string | null
+  order_id: string | null
+  user_id: string | null
+  previous_quantity: number
+  updated_quantity: number
+  previous_reserved: number
+  updated_reserved: number
+  movement_type: InventoryMovementType
+  reason: string | null
+  created_at: string
+}
+
+export interface InventoryReservation {
+  id: string
+  order_id: string
+  product_id: string
+  dealer_id: string | null
+  warehouse_id: string | null
+  quantity: number
+  status: InventoryReservationStatus
+  created_at: string
+  updated_at: string
+}
+
+export interface InventoryTransfer {
+  id: string
+  product_id: string
+  from_dealer_id: string | null
+  from_warehouse_id: string | null
+  to_dealer_id: string | null
+  to_warehouse_id: string | null
+  quantity: number
+  status: InventoryTransferStatus
+  requested_by: string
+  approved_by: string | null
+  reason: string | null
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+}
+
+export interface Warehouse {
+  id: string
+  name: string
+  location: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface LowStockAlert {
+  id: string
+  product_id: string
+  dealer_id: string | null
+  warehouse_id: string | null
+  alert_level: InventoryAlertLevel
+  current_stock: number
+  threshold: number
+  is_read: boolean
+  created_at: string
   updated_at: string
 }
 
@@ -224,13 +371,48 @@ export type Database = {
       }
       payments: {
         Row: Payment
-        Insert: Omit<Payment, 'id' | 'paid_at'>
-        Update: Partial<Omit<Payment, 'id' | 'paid_at'>>
+        Insert: Omit<Payment, 'id' | 'created_at' | 'updated_at' | 'paid_at'>
+        Update: Partial<Omit<Payment, 'id' | 'created_at'>>
+      }
+      invoices: {
+        Row: Invoice
+        Insert: Omit<Invoice, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Invoice, 'id' | 'created_at'>>
+      }
+      payment_audit_logs: {
+        Row: PaymentAuditLog
+        Insert: Omit<PaymentAuditLog, 'id' | 'created_at'>
+        Update: Partial<Omit<PaymentAuditLog, 'id' | 'created_at'>>
       }
       inventory: {
         Row: Inventory
         Insert: Omit<Inventory, 'id' | 'updated_at'>
         Update: Partial<Omit<Inventory, 'id' | 'updated_at'>>
+      }
+      inventory_ledger: {
+        Row: InventoryLedger
+        Insert: Omit<InventoryLedger, 'id' | 'created_at'>
+        Update: Partial<Omit<InventoryLedger, 'id' | 'created_at'>>
+      }
+      inventory_reservations: {
+        Row: InventoryReservation
+        Insert: Omit<InventoryReservation, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<InventoryReservation, 'id' | 'created_at'>>
+      }
+      inventory_transfers: {
+        Row: InventoryTransfer
+        Insert: Omit<InventoryTransfer, 'id' | 'created_at' | 'updated_at' | 'completed_at'>
+        Update: Partial<Omit<InventoryTransfer, 'id' | 'created_at'>>
+      }
+      warehouses: {
+        Row: Warehouse
+        Insert: Omit<Warehouse, 'id' | 'created_at'>
+        Update: Partial<Omit<Warehouse, 'id' | 'created_at'>>
+      }
+      low_stock_alerts: {
+        Row: LowStockAlert
+        Insert: Omit<LowStockAlert, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<LowStockAlert, 'id' | 'created_at'>>
       }
       messages: {
         Row: Message

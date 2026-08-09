@@ -1,20 +1,27 @@
 import { PageHeader } from "@/components/shared/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
-import { Warehouse } from "lucide-react"
+import { InventoryDashboard } from "@/components/inventory/inventory-dashboard"
+import { getCurrentUserProfile } from "@/lib/auth/auth.helpers"
+import { getInventoryStats, getInventoryItems } from "@/lib/inventory/data"
+import { redirect } from "next/navigation"
 
-export default function DealerInventoryPage() {
+export default async function DealerInventoryPage() {
+  const userProfile = await getCurrentUserProfile()
+  if (!userProfile?.profile?.id) redirect("/auth/login")
+
+  const dealerId = userProfile.profile.id
+  const [stats, items] = await Promise.all([
+    getInventoryStats({ dealerId }),
+    getInventoryItems({ dealerId, limit: 20 }),
+  ])
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Inventory"
-        description="Manage your inventory"
+        title="My Inventory"
+        description="Monitor and manage your stock levels"
         breadcrumb={[{ label: "Dealer", href: "/dealer" }, { label: "Inventory" }]}
       />
-      <EmptyState
-        icon={Warehouse}
-        title="Inventory Management"
-        description="This page will allow you to manage your inventory levels and stock."
-      />
+      <InventoryDashboard initialStats={stats} initialItems={items} dealerId={dealerId} />
     </div>
   )
 }

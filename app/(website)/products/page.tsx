@@ -131,7 +131,7 @@ async function ProductsContent({ searchParams }: ProductsPageProps) {
 
 export default function ProductsPage({ searchParams }: ProductsPageProps) {
   return (
-    <div className="container py-16 space-y-8">
+    <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-24 space-y-10">
       <SectionHeader
         title="Browse Products"
         description="Find the perfect parts for your repair needs"
@@ -145,10 +145,6 @@ export default function ProductsPage({ searchParams }: ProductsPageProps) {
         <div className="flex gap-4 items-center w-full md:w-auto">
           <Button
             variant="outline"
-            onClick={() => {
-              // Mobile filter toggle - would need client component
-              console.log('Toggle filters')
-            }}
             className="md:hidden"
           >
             <SlidersHorizontal className="h-4 w-4 mr-2" />

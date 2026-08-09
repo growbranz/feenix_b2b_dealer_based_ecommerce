@@ -14,7 +14,7 @@ const dealers = [
 
 export function TrustedDealers() {
   return (
-    <section className="py-24 bg-gradient-to-b from-muted/30 to-background">
+    <section className="py-24 bg-gradient-to-b from-slate-50 to-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -23,7 +23,7 @@ export function TrustedDealers() {
           className="text-center mb-12"
         >
           <h2 className="text-4xl font-bold font-poppins mb-4">Trusted Dealers</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-slate-600 max-w-2xl mx-auto">
             Verified dealers with excellent ratings and years of experience
           </p>
         </motion.div>
@@ -39,37 +39,37 @@ export function TrustedDealers() {
               whileHover={{ y: -8 }}
             >
               <Link href="/dealers">
-                <div className="bg-white rounded-2xl p-6 border-2 border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 group h-full">
+                <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 hover:border-blue-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-600/10 group h-full">
                   {/* Company Logo */}
                   <div className="text-4xl mb-4">{dealer.logo}</div>
 
                   {/* Dealer Info */}
-                  <h3 className="font-semibold font-poppins text-lg mb-2 group-hover:text-primary transition-colors">
+                  <h3 className="font-semibold font-poppins text-lg mb-2 group-hover:text-blue-600 transition-colors">
                     {dealer.name}
                   </h3>
 
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
                       <MapPin className="h-4 w-4" />
                       <span>{dealer.location}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
                       <Award className="h-4 w-4" />
                       <span>{dealer.years}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
                       <ShieldCheck className="h-4 w-4" />
                       <span>{dealer.products} Products</span>
                     </div>
                   </div>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-2 pt-4 border-t border-border">
+                  <div className="flex items-center gap-2 pt-4 border-t border-slate-200">
                     <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className={`h-4 w-4 ${i < Math.floor(dealer.rating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+                          className={`h-4 w-4 ${i < Math.floor(dealer.rating) ? "fill-yellow-400 text-yellow-400" : "text-slate-300"}`}
                         />
                       ))}
                     </div>
@@ -96,7 +96,7 @@ export function TrustedDealers() {
           className="text-center mt-12"
         >
           <Link href="/dealers">
-            <button className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-secondary text-white font-medium rounded-xl transition-colors shadow-lg shadow-primary/25">
+            <button className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-blue-600/25">
               View All Dealers
             </button>
           </Link>

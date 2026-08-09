@@ -28,9 +28,14 @@ export function ThemeProvider({
   storageKey = "feenix-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = React.useState<Theme>(
-    () => (typeof window !== "undefined" ? (localStorage.getItem(storageKey) as Theme) : defaultTheme) || defaultTheme
-  )
+  const [theme, setTheme] = React.useState<Theme>(defaultTheme)
+
+  React.useEffect(() => {
+    const saved = window.localStorage.getItem(storageKey) as Theme | null
+    if (saved) {
+      setTheme(saved)
+    }
+  }, [storageKey])
 
   React.useEffect(() => {
     const root = window.document.documentElement
@@ -53,7 +58,7 @@ export function ThemeProvider({
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
+      window.localStorage.setItem(storageKey, theme)
       setTheme(theme)
     },
   }

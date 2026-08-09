@@ -33,7 +33,7 @@ export async function middleware(req: NextRequest) {
 
   // Define protected routes
   const protectedRoutes = ['/admin', '/dealer']
-  const authRoutes = ['/auth/login', '/auth/forgot-password', '/auth/reset-password']
+  const authRoutes = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password']
   const publicRoutes = ['/']
 
   // Check if current path is protected

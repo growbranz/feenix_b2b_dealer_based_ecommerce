@@ -18,12 +18,14 @@ export function SectionHeader({
   }
 
   return (
-    <div className={`mb-12 ${alignmentClasses[align]} ${align === "center" ? "mx-auto" : ""}`}>
-      <h2 className="text-3xl md:text-4xl font-bold mb-4">{title}</h2>
+    <div className={`mb-14 ${alignmentClasses[align]} ${align === "center" ? "mx-auto" : ""}`}>
+      <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4 text-gradient">
+        {title}
+      </h2>
       {description && (
-        <p className="text-lg text-muted-foreground max-w-2xl">{description}</p>
+        <p className="text-lg md:text-xl text-slate-600 max-w-3xl leading-relaxed mx-auto">{description}</p>
       )}
-      {action && <div className="mt-6">{action}</div>}
+      {action && <div className="mt-8">{action}</div>}
     </div>
   )
 }

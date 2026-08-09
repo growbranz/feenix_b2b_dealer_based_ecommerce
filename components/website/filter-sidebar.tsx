@@ -117,15 +117,15 @@ export function FilterSidebar({
 
   return (
     <aside className={className}>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Filters</CardTitle>
-          <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+      <Card className="rounded-2xl border-slate-100 bg-white shadow-[0_4px_24px_-10px_rgba(30,41,59,0.06)] sticky top-28">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <CardTitle className="text-lg font-bold">Filters</CardTitle>
+          <Button variant="ghost" size="sm" className="text-slate-500 hover:text-blue-600 rounded-full" onClick={handleClearFilters}>
             <X className="h-4 w-4 mr-2" />
             Clear
           </Button>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-8">
           {categories && (
             <div className="space-y-3">
               <h3 className="font-semibold">{categories.title}</h3>
@@ -144,7 +144,7 @@ export function FilterSidebar({
                       {option.label}
                     </Label>
                     {option.count && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-slate-500">
                         ({option.count})
                       </span>
                     )}
@@ -172,7 +172,7 @@ export function FilterSidebar({
                       {option.label}
                     </Label>
                     {option.count && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-slate-500">
                         ({option.count})
                       </span>
                     )}
@@ -193,7 +193,7 @@ export function FilterSidebar({
                 onValueChange={handlePriceChange}
                 className="w-full"
               />
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="flex justify-between text-sm text-slate-600">
                 <span>${price[0]}</span>
                 <span>${price[1]}</span>
               </div>

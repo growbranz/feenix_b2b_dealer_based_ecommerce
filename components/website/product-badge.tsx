@@ -9,11 +9,11 @@ export interface ProductBadgeProps {
 
 export function ProductBadge({ children, variant = "new", className }: ProductBadgeProps) {
   const variantStyles = {
-    new: "bg-green-500 text-white hover:bg-green-600",
-    used: "bg-orange-500 text-white hover:bg-orange-600",
-    refurbished: "bg-blue-500 text-white hover:bg-blue-600",
-    sale: "bg-red-500 text-white hover:bg-red-600",
-    featured: "bg-purple-500 text-white hover:bg-purple-600"
+    new: "bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100",
+    used: "bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100",
+    refurbished: "bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100",
+    sale: "bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100",
+    featured: "bg-violet-50 text-violet-700 border border-violet-100 hover:bg-violet-100"
   }
 
   return (

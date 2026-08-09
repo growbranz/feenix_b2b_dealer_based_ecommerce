@@ -16,60 +16,60 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product.slug}`}>
-      <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col">
-        <CardContent className="p-4 flex-1">
-          <div className="aspect-square bg-muted rounded-lg mb-4 overflow-hidden relative">
+      <Card className="group cursor-pointer overflow-hidden h-full flex flex-col rounded-2xl border-slate-100 bg-white shadow-[0_4px_24px_-10px_rgba(30,41,59,0.08)] hover:shadow-[0_24px_48px_-16px_rgba(37,99,235,0.13)] hover:-translate-y-1 transition-all duration-300">
+        <CardContent className="p-5 flex-1">
+          <div className="aspect-square bg-slate-50 rounded-2xl mb-5 overflow-hidden relative">
             {imageUrl ? (
               <Image
                 src={imageUrl}
                 alt={product.title}
                 fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+              <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
                 No Image
               </div>
             )}
             {product.condition && (
-              <div className="absolute top-2 left-2">
+              <div className="absolute top-3 left-3">
                 <ProductBadge variant={product.condition.toLowerCase() as any}>
                   {product.condition}
                 </ProductBadge>
               </div>
             )}
             {isOutOfStock && (
-              <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                <Badge variant="destructive" className="text-sm">Out of Stock</Badge>
+              <div className="absolute inset-0 bg-white/85 backdrop-blur-sm flex items-center justify-center">
+                <Badge variant="destructive" className="text-sm px-3 py-1 rounded-full">Out of Stock</Badge>
               </div>
             )}
           </div>
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">{product.category.name}</p>
-            <h3 className="font-semibold text-lg group-hover:text-primary transition-colors line-clamp-2">
+            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">{product.category.name}</p>
+            <h3 className="font-bold text-lg group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
               {product.title}
             </h3>
             {product.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+              <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">{product.description}</p>
             )}
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-400">
               {product.brand.name} • {product.model.name}
             </p>
           </div>
         </CardContent>
-        <CardFooter className="p-4 pt-0 flex items-center justify-between">
+        <CardFooter className="p-5 pt-0 flex items-center justify-between">
           <div>
-            <p className="text-2xl font-bold">
-              ${product.price.toLocaleString()}
+            <p className="text-2xl font-extrabold text-slate-900">
+              ₹{product.price.toLocaleString("en-IN")}
             </p>
             {!isOutOfStock && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-emerald-600 font-medium">
                 {product.stock} in stock
               </p>
             )}
           </div>
-          <Button size="sm" disabled={isOutOfStock}>
+          <Button size="sm" className="rounded-full bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-md shadow-blue-500/20 hover:shadow-blue-500/35 transition-all border-0" disabled={isOutOfStock}>
             View Details
           </Button>
         </CardFooter>

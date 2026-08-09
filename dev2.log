@@ -1,0 +1,24 @@
+﻿
+> feenix-repair@0.1.0 dev
+> next dev -p 3000
+
+Γû▓ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.104:3000
+- Environments: .env.local
+Γ£ô Ready in 1021ms
+npm : ΓÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+At line:1 char:1
++ npm run dev -- -p 3000 2>&1 | Out-File -FilePath dev2.log -Encoding U ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá The "middle...leware-to-proxy:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium 
+(usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ GET /dealer/products 200 in 2.4s (next.js: 574ms, proxy.ts: 639ms, application-code: 1154ms)

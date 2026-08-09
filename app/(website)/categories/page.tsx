@@ -40,7 +40,7 @@ async function CategoriesContent() {
 
 export default function CategoriesPage() {
   return (
-    <div className="container py-16 space-y-16">
+    <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-24 space-y-16">
       <SectionHeader
         title="All Categories"
         description="Browse our extensive catalog of repair parts and components"

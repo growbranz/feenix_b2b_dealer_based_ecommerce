@@ -72,6 +72,7 @@ export function Pagination({
       <Button
         variant="outline"
         size="icon"
+        className="rounded-full h-10 w-10 border-slate-200 hover:border-blue-200 hover:bg-blue-50/50 transition-all"
         onClick={() => handlePageChange(currentPage - 1)}
         disabled={currentPage === 1}
         aria-label="Previous page"
@@ -85,6 +86,7 @@ export function Pagination({
             <Button
               variant={page === currentPage ? "default" : "outline"}
               size="icon"
+              className={`h-10 w-10 rounded-full border-slate-200 transition-all ${page === currentPage ? "bg-gradient-to-r from-blue-700 to-blue-500 text-white border-0 shadow-md shadow-blue-500/20" : "hover:border-blue-200 hover:bg-blue-50/50"}`}
               onClick={() => handlePageChange(page)}
               aria-label={`Page ${page}`}
               aria-current={page === currentPage ? "page" : undefined}
@@ -92,7 +94,7 @@ export function Pagination({
               {page}
             </Button>
           ) : (
-            <span className="px-2" aria-hidden="true">...</span>
+            <span className="px-2 text-slate-400" aria-hidden="true">...</span>
           )}
         </React.Fragment>
       ))}
@@ -100,6 +102,7 @@ export function Pagination({
       <Button
         variant="outline"
         size="icon"
+        className="rounded-full h-10 w-10 border-slate-200 hover:border-blue-200 hover:bg-blue-50/50 transition-all"
         onClick={() => handlePageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         aria-label="Next page"

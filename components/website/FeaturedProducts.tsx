@@ -90,7 +90,7 @@ const products = [
 
 export function FeaturedProducts() {
   return (
-    <section className="py-24 bg-gradient-to-b from-muted/30 to-background">
+    <section className="py-24 bg-gradient-to-b from-slate-50 to-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -100,12 +100,12 @@ export function FeaturedProducts() {
         >
           <div>
             <h2 className="text-4xl font-bold font-poppins mb-4">Featured Products</h2>
-            <p className="text-muted-foreground max-w-2xl">
+            <p className="text-slate-600 max-w-2xl">
               Top quality mobile spare parts from our verified dealers
             </p>
           </div>
           <Link href="/products">
-            <button className="hidden md:inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-secondary text-white font-medium rounded-xl transition-colors shadow-lg shadow-primary/25">
+            <button className="hidden md:inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-blue-600/25">
               View All Products
               <ArrowRight className="h-4 w-4" />
             </button>
@@ -122,11 +122,11 @@ export function FeaturedProducts() {
               transition={{ delay: index * 0.05 }}
               whileHover={{ y: -8 }}
             >
-              <div className="bg-white rounded-2xl border-2 border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 group h-full">
+              <div className="bg-white rounded-2xl border-2 border-slate-200 hover:border-blue-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-600/10 group h-full">
                 {/* Product Image */}
-                <div className="relative h-48 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-t-2xl flex items-center justify-center overflow-hidden">
+                <div className="relative h-48 bg-gradient-to-br from-blue-600/5 to-blue-700/5 rounded-t-2xl flex items-center justify-center overflow-hidden">
                   <div className="text-6xl">{product.image}</div>
-                  <button className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:bg-primary hover:text-white transition-colors">
+                  <button className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:bg-blue-600 hover:text-white transition-colors">
                     <Heart className="h-4 w-4" />
                   </button>
                   {product.verified && (
@@ -142,25 +142,25 @@ export function FeaturedProducts() {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <ShieldCheck className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-medium text-muted-foreground">{product.dealer}</span>
+                      <span className="text-sm font-medium text-slate-600">{product.dealer}</span>
                     </div>
-                    <h3 className="font-semibold font-poppins text-lg mb-2 group-hover:text-primary transition-colors">
+                    <h3 className="font-semibold font-poppins text-lg mb-2 group-hover:text-blue-600 transition-colors">
                       {product.name}
                     </h3>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
                       <MapPin className="h-4 w-4" />
                       <span>{product.location}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                     <div>
-                      <div className="text-2xl font-bold font-poppins text-primary">{product.price}</div>
+                      <div className="text-2xl font-bold font-poppins text-blue-600">{product.price}</div>
                       <div className={`text-xs ${product.stock === "In Stock" ? "text-green-500" : "text-orange-500"}`}>
                         {product.stock}
                       </div>
                     </div>
-                    <button className="p-2 bg-primary/10 hover:bg-primary hover:text-white rounded-lg transition-colors">
+                    <button className="p-2 bg-blue-600/10 hover:bg-blue-600 hover:text-white rounded-lg transition-colors">
                       <Eye className="h-4 w-4" />
                     </button>
                   </div>
@@ -178,7 +178,7 @@ export function FeaturedProducts() {
           className="text-center mt-12 md:hidden"
         >
           <Link href="/products">
-            <button className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-secondary text-white font-medium rounded-xl transition-colors shadow-lg shadow-primary/25">
+            <button className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-blue-600/25">
               View All Products
               <ArrowRight className="h-4 w-4" />
             </button>

@@ -19,7 +19,7 @@ const categories = [
 
 export function Categories() {
   return (
-    <section className="py-24 bg-background">
+    <section className="py-24 bg-slate-50">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -28,7 +28,7 @@ export function Categories() {
           className="text-center mb-12"
         >
           <h2 className="text-4xl font-bold font-poppins mb-4">Popular Categories</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-slate-600 max-w-2xl mx-auto">
             Browse through our extensive collection of mobile spare parts
           </p>
         </motion.div>
@@ -44,17 +44,17 @@ export function Categories() {
               whileHover={{ y: -8 }}
             >
               <Link href={category.href}>
-                <div className="bg-white rounded-2xl p-6 border-2 border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 group h-full">
+                <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 hover:border-blue-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-600/10 group h-full">
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     className={`w-14 h-14 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-shadow`}
                   >
                     <category.icon className="h-7 w-7 text-white" />
                   </motion.div>
-                  <h3 className="font-semibold font-poppins text-lg mb-2 group-hover:text-primary transition-colors">
+                  <h3 className="font-semibold font-poppins text-lg mb-2 group-hover:text-blue-600 transition-colors">
                     {category.name}
                   </h3>
-                  <p className="text-sm text-muted-foreground">{category.count} Products</p>
+                  <p className="text-sm text-slate-600">{category.count} Products</p>
                 </div>
               </Link>
             </motion.div>
@@ -69,7 +69,7 @@ export function Categories() {
           className="text-center mt-12"
         >
           <Link href="/categories">
-            <button className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-secondary text-white font-medium rounded-xl transition-colors shadow-lg shadow-primary/25">
+            <button className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-blue-600/25">
               View All Categories
               <ArrowRight className="h-4 w-4" />
             </button>

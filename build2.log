@@ -1,0 +1,150 @@
+﻿
+> feenix-repair@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.2.10 (Turbopack)
+- Environments: .env.local
+
+npm : ΓÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+At line:1 char:1
++ npm run build 2>&1 | Out-File -FilePath build2.log -Encoding UTF8; "B ...
++ ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá The "middle...leware-to-proxy:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 16.0s
+  Running TypeScript ...
+  Finished TypeScript in 18.6s ...
+  Collecting page data using 15 workers ...
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+  Generating static pages using 15 workers (0/67) ...
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+  Generating static pages using 15 workers (16/67) 
+ΓÜá∩╕Å  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: 
+https://github.com/orgs/supabase/discussions/45715
+  Generating static pages using 15 workers (33/67) 
+  Generating static pages using 15 workers (50/67) 
+Γ£ô Generating static pages using 15 workers (67/67) in 1946ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /about
+Γö£ ╞Æ /admin
+Γö£ ╞Æ /admin/activity
+Γö£ ╞Æ /admin/analytics
+Γö£ ╞Æ /admin/api-keys
+Γö£ ╞Æ /admin/banners
+Γö£ ╞Æ /admin/brands
+Γö£ ╞Æ /admin/categories
+Γö£ ╞Æ /admin/cms
+Γö£ ╞Æ /admin/dealers
+Γö£ ╞Æ /admin/email
+Γö£ ╞Æ /admin/email/logs
+Γö£ ╞Æ /admin/email/settings
+Γö£ ╞Æ /admin/email/templates
+Γö£ ╞Æ /admin/enquiries
+Γö£ ╞Æ /admin/enquiries/[id]
+Γö£ ╞Æ /admin/executive-dashboard
+Γö£ ╞Æ /admin/featured-products
+Γö£ ╞Æ /admin/forecast
+Γö£ ╞Æ /admin/integrations
+Γö£ ╞Æ /admin/inventory
+Γö£ ╞Æ /admin/inventory/adjustments
+Γö£ ╞Æ /admin/inventory/alerts
+Γö£ ╞Æ /admin/inventory/history
+Γö£ ╞Æ /admin/inventory/transfers
+Γö£ ╞Æ /admin/messages
+Γö£ ╞Æ /admin/models
+Γö£ ╞Æ /admin/notifications
+Γö£ ╞Æ /admin/orders
+Γö£ ╞Æ /admin/orders/[id]
+Γö£ ╞Æ /admin/payments
+Γö£ ╞Æ /admin/products
+Γö£ ╞Æ /admin/profile
+Γö£ ╞Æ /admin/reports
+Γö£ ╞Æ /admin/reports/export
+Γö£ ╞Æ /admin/settings
+Γö£ ╞Æ /admin/system/jobs
+Γö£ ╞Æ /admin/webhooks
+Γö£ ╞Æ /api/invoices/[id]/pdf
+Γö£ ╞Æ /api/payments/[id]
+Γö£ ╞Æ /api/payments/create-order
+Γö£ ╞Æ /api/payments/refund
+Γö£ ╞Æ /api/payments/verify
+Γö£ ╞Æ /api/razorpay/webhook
+Γö£ Γùï /auth/forgot-password
+Γö£ Γùï /auth/login
+Γö£ Γùï /auth/register
+Γö£ Γùï /auth/reset-password
+Γö£ ╞Æ /categories
+Γö£ Γùï /contact
+Γö£ ╞Æ /dealer
+Γö£ ╞Æ /dealer/analytics
+Γö£ ╞Æ /dealer/browse
+Γö£ ╞Æ /dealer/enquiries
+Γö£ ╞Æ /dealer/enquiries/[id]
+Γö£ ╞Æ /dealer/inventory
+Γö£ ╞Æ /dealer/inventory/history
+Γö£ ╞Æ /dealer/messages
+Γö£ ╞Æ /dealer/notifications
+Γö£ ╞Æ /dealer/orders
+Γö£ ╞Æ /dealer/orders/[id]
+Γö£ ╞Æ /dealer/payments
+Γö£ ╞Æ /dealer/products
+Γö£ ╞Æ /dealer/products/[id]
+Γö£ ╞Æ /dealer/products/add
+Γö£ ╞Æ /dealer/profile
+Γö£ ╞Æ /dealer/purchases
+Γö£ ╞Æ /dealer/sales
+Γö£ ╞Æ /dealer/settings
+Γö£ ╞Æ /products
+Γöö ╞Æ /products/[slug]
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
+BUILD_EXIT=0

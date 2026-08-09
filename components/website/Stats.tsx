@@ -15,7 +15,7 @@ const stats = [
 
 export function Stats() {
   return (
-    <section className="py-20 bg-gradient-to-b from-background to-muted/30">
+    <section className="py-20 bg-gradient-to-b from-white to-slate-50">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -24,7 +24,7 @@ export function Stats() {
           className="text-center mb-12"
         >
           <h2 className="text-4xl font-bold font-poppins mb-4">Our Impact in Numbers</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-slate-600 max-w-2xl mx-auto">
             Trusted by thousands of dealers across India, we're transforming the mobile spare parts industry
           </p>
         </motion.div>
@@ -39,17 +39,17 @@ export function Stats() {
               transition={{ delay: index * 0.1 }}
               whileHover={{ y: -8 }}
             >
-              <div className="bg-white rounded-2xl p-8 border-2 border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 group">
+              <div className="bg-white rounded-2xl p-8 border-2 border-slate-200 hover:border-blue-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-600/10 group">
                 <motion.div
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-shadow`}
                 >
                   <stat.icon className="h-8 w-8 text-white" />
                 </motion.div>
-                <div className="text-4xl font-bold font-poppins bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+                <div className="text-4xl font-bold font-poppins bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
                   {stat.value}
                 </div>
-                <div className="text-muted-foreground font-medium">{stat.label}</div>
+                <div className="text-slate-600 font-medium">{stat.label}</div>
               </div>
             </motion.div>
           ))}

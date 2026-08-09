@@ -1,19 +1,21 @@
-import { PageHeader } from "@/components/shared/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
-import { Mail } from "lucide-react"
+import { ChatLayout } from "@/components/chat/chat-layout"
+import { getCurrentUserProfile } from "@/lib/auth/auth.helpers"
+import { redirect } from "next/navigation"
 
-export default function DealerMessagesPage() {
+export default async function DealerMessagesPage() {
+  const userProfile = await getCurrentUserProfile()
+  if (!userProfile?.profile?.id) redirect("/auth/login")
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Messages"
-        description="Manage your messages"
-        breadcrumb={[{ label: "Dealer", href: "/dealer" }, { label: "Messages" }]}
-      />
-      <EmptyState
-        icon={Mail}
-        title="Messages"
-        description="This page will allow you to manage all your messages and communications."
+    <div className="space-y-4">
+      <ChatLayout
+        mode="dealer"
+        currentUser={{
+          id: userProfile.profile.id,
+          name: userProfile.profile.name,
+          avatar_url: userProfile.profile.profile_image,
+          role: userProfile.profile.role,
+        }}
       />
     </div>
   )

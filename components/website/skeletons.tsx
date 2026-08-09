@@ -3,17 +3,17 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function ProductCardSkeleton() {
   return (
-    <Card className="h-full flex flex-col">
-      <CardContent className="p-4 flex-1">
-        <Skeleton className="aspect-square w-full rounded-lg mb-4" />
-        <Skeleton className="h-4 w-3/4 mb-2" />
-        <Skeleton className="h-3 w-1/2 mb-2" />
-        <Skeleton className="h-3 w-full mb-1" />
-        <Skeleton className="h-3 w-2/3" />
+    <Card className="h-full flex flex-col rounded-2xl border-slate-100 shadow-[0_4px_24px_-10px_rgba(30,41,59,0.06)]">
+      <CardContent className="p-5 flex-1">
+        <Skeleton className="aspect-square w-full rounded-2xl mb-5" />
+        <Skeleton className="h-5 w-3/4 mb-3 rounded-md" />
+        <Skeleton className="h-3.5 w-1/2 mb-3 rounded-md" />
+        <Skeleton className="h-3.5 w-full mb-2 rounded-md" />
+        <Skeleton className="h-3.5 w-2/3 rounded-md" />
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex items-center justify-between">
-        <Skeleton className="h-8 w-20" />
-        <Skeleton className="h-9 w-24" />
+      <CardFooter className="p-5 pt-0 flex items-center justify-between">
+        <Skeleton className="h-8 w-24 rounded-md" />
+        <Skeleton className="h-10 w-28 rounded-full" />
       </CardFooter>
     </Card>
   )
@@ -21,12 +21,12 @@ export function ProductCardSkeleton() {
 
 export function CategoryCardSkeleton() {
   return (
-    <Card>
+    <Card className="rounded-2xl border-slate-100 shadow-[0_4px_24px_-10px_rgba(30,41,59,0.06)]">
       <CardContent className="p-6">
-        <Skeleton className="aspect-video w-full rounded-lg mb-4" />
-        <Skeleton className="h-6 w-3/4 mb-2" />
-        <Skeleton className="h-4 w-1/2 mb-2" />
-        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="aspect-video w-full rounded-2xl mb-5" />
+        <Skeleton className="h-6 w-3/4 mb-3 rounded-md" />
+        <Skeleton className="h-4 w-1/2 mb-3 rounded-md" />
+        <Skeleton className="h-4 w-1/3 rounded-md" />
       </CardContent>
     </Card>
   )
@@ -34,8 +34,8 @@ export function CategoryCardSkeleton() {
 
 export function ProductDetailsSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         {/* Image Gallery */}
         <div className="space-y-4">
           <Skeleton className="aspect-square w-full rounded-lg" />

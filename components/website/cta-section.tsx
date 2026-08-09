@@ -8,7 +8,7 @@ import Link from "next/link"
 
 export function CTASection() {
   return (
-    <section className="py-24 bg-gradient-to-r from-primary via-secondary to-accent relative overflow-hidden">
+    <section className="py-24 bg-gradient-to-r from-blue-600 via-blue-700 to-blue-600 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
@@ -36,7 +36,7 @@ export function CTASection() {
             Ready to Grow Your Mobile Spare Parts Business?
           </h2>
           
-          <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
             Join thousands of successful dealers who are already scaling their business on Feenix Repair. Start your journey today.
           </p>
 
@@ -48,7 +48,7 @@ export function CTASection() {
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <Link href="/auth/register">
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90 gap-2 shadow-xl">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-slate-100 gap-2 shadow-xl">
                 Register as Dealer
                 <ArrowRight className="h-4 w-4" />
               </Button>

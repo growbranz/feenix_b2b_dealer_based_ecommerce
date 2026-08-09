@@ -27,10 +27,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider defaultTheme="system" storageKey="feenix-theme">
+        <ThemeProvider defaultTheme="light" storageKey="feenix-theme">
           <AuthProvider>
             {children}
           </AuthProvider>
