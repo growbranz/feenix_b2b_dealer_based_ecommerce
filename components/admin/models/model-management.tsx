@@ -148,6 +148,10 @@ export function ModelManagement() {
   }
 
   const handleSave = async () => {
+    if (!form.brand_id) {
+      alert("Please select a brand.")
+      return
+    }
     setIsSaving(true)
     try {
       const supabase = createClient()
@@ -350,7 +354,7 @@ export function ModelManagement() {
                 id="brand"
                 value={form.brand_id}
                 onChange={(e) => updateForm("brand_id", e.target.value)}
-                options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                options={[{ value: "", label: "Select brand" }, ...brands.map((b) => ({ value: b.id, label: b.name }))]}
               />
             </div>
             <div className="space-y-2">
