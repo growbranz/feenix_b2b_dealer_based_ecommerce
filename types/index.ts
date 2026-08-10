@@ -2,6 +2,7 @@
 export type UserRole = 'ADMIN' | 'DEALER'
 export type ProductStatus = 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK'
 export type EnquiryStatus = 'PENDING' | 'ASSIGNED' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED'
+export type EnquiryPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 export type OrderStatus =
   | 'PENDING'
   | 'CONFIRMED'
@@ -136,7 +137,19 @@ export interface Enquiry {
   quantity: number
   remarks: string | null
   status: EnquiryStatus
+  priority: EnquiryPriority
   assigned_by: string | null
+  order_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EnquiryStatusHistory {
+  id: string
+  enquiry_id: string
+  status: EnquiryStatus
+  actor_id: string | null
+  note: string | null
   created_at: string
 }
 
@@ -411,8 +424,13 @@ export type Database = {
       }
       enquiries: {
         Row: Enquiry
-        Insert: Omit<Enquiry, 'id' | 'created_at'>
+        Insert: Omit<Enquiry, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Enquiry, 'id' | 'created_at'>>
+      }
+      enquiry_status_history: {
+        Row: EnquiryStatusHistory
+        Insert: Omit<EnquiryStatusHistory, 'id' | 'created_at'>
+        Update: Partial<Omit<EnquiryStatusHistory, 'id' | 'created_at'>>
       }
       orders: {
         Row: Order

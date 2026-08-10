@@ -16,6 +16,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TYPE user_role AS ENUM ('ADMIN', 'DEALER');
 CREATE TYPE product_status AS ENUM ('ACTIVE', 'INACTIVE', 'OUT_OF_STOCK');
 CREATE TYPE enquiry_status AS ENUM ('PENDING', 'ASSIGNED', 'ACCEPTED', 'REJECTED', 'COMPLETED');
+CREATE TYPE enquiry_priority AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
 CREATE TYPE order_status AS ENUM ('PENDING', 'CONFIRMED', 'PROCESSING', 'PACKED', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'RETURNED', 'REFUNDED');
 CREATE TYPE payment_status AS ENUM ('PENDING', 'CREATED', 'AUTHORIZED', 'CAPTURED', 'PAID', 'FAILED', 'CANCELLED', 'REFUNDED', 'PARTIALLY_REFUNDED');
 CREATE TYPE inventory_movement_type AS ENUM ('PURCHASE', 'SALE', 'RESERVATION', 'RELEASE', 'TRANSFER', 'ADJUSTMENT', 'RETURN', 'DAMAGE', 'LOST');
@@ -119,7 +120,21 @@ CREATE TABLE IF NOT EXISTS enquiries (
   quantity INTEGER NOT NULL,
   remarks TEXT,
   status enquiry_status DEFAULT 'PENDING',
+  priority enquiry_priority NOT NULL DEFAULT 'MEDIUM',
   assigned_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  order_id UUID, -- FK to orders(id) added after the orders table is created below
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enquiry status history (drives the Enquiry Timeline UI). Mirrors the
+-- order_status_history architecture; no timeline data lives on enquiries.
+CREATE TABLE IF NOT EXISTS enquiry_status_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  enquiry_id UUID NOT NULL REFERENCES enquiries(id) ON DELETE CASCADE,
+  status enquiry_status NOT NULL,
+  actor_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  note TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

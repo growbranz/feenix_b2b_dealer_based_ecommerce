@@ -21,3 +21,13 @@ export function toDisplayPaymentStatus(status: string): PaymentStatus {
       return "PENDING"
   }
 }
+
+/**
+ * Generates a unique order number. Mirrors the style of
+ * generateInvoiceNumber() in lib/payment/utils.ts.
+ */
+export function generateOrderNumber(): string {
+  const timestamp = Date.now().toString(36).toUpperCase()
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase()
+  return `ORD-${timestamp}-${random}`
+}
