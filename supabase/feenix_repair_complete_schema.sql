@@ -16,7 +16,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TYPE user_role AS ENUM ('ADMIN', 'DEALER');
 CREATE TYPE product_status AS ENUM ('ACTIVE', 'INACTIVE', 'OUT_OF_STOCK');
 CREATE TYPE enquiry_status AS ENUM ('PENDING', 'ASSIGNED', 'ACCEPTED', 'REJECTED', 'COMPLETED');
-CREATE TYPE order_status AS ENUM ('PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED');
+CREATE TYPE order_status AS ENUM ('PENDING', 'CONFIRMED', 'PROCESSING', 'PACKED', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'RETURNED', 'REFUNDED');
 CREATE TYPE payment_status AS ENUM ('PENDING', 'CREATED', 'AUTHORIZED', 'CAPTURED', 'PAID', 'FAILED', 'CANCELLED', 'REFUNDED', 'PARTIALLY_REFUNDED');
 CREATE TYPE inventory_movement_type AS ENUM ('PURCHASE', 'SALE', 'RESERVATION', 'RELEASE', 'TRANSFER', 'ADJUSTMENT', 'RETURN', 'DAMAGE', 'LOST');
 CREATE TYPE inventory_transfer_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'IN_TRANSIT', 'COMPLETED', 'CANCELLED');
@@ -216,10 +216,16 @@ CREATE TABLE IF NOT EXISTS orders (
   price DECIMAL(12, 2) NOT NULL,
   subtotal DECIMAL(12, 2) NOT NULL,
   tax DECIMAL(12, 2) DEFAULT 0,
+  discount DECIMAL(12, 2) DEFAULT 0,
+  shipping_charges DECIMAL(12, 2) DEFAULT 0,
   total DECIMAL(12, 2) NOT NULL,
   status order_status DEFAULT 'PENDING',
   payment_status payment_status DEFAULT 'PENDING',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  courier VARCHAR(255),
+  tracking_number VARCHAR(255),
+  expected_delivery DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
@@ -230,9 +236,33 @@ CREATE TABLE IF NOT EXISTS order_items (
   price DECIMAL(12, 2) NOT NULL,
   subtotal DECIMAL(12, 2) NOT NULL,
   tax DECIMAL(12, 2) DEFAULT 0,
+  discount DECIMAL(12, 2) DEFAULT 0,
   total DECIMAL(12, 2) NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Order status history (drives the Dealer/Admin Order "Timeline" UI).
+CREATE TABLE IF NOT EXISTS order_status_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  status order_status NOT NULL,
+  actor_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  note TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Documents (dispatch notes, dealer-uploaded invoices, etc.) attached to an
+-- order. Kept separate from the admin-only-write `invoices` table so
+-- dealers can attach their own documents without weakening invoices' RLS.
+CREATE TABLE IF NOT EXISTS order_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  type VARCHAR(20) NOT NULL DEFAULT 'OTHER' CHECK (type IN ('INVOICE', 'DISPATCH', 'OTHER')),
+  name VARCHAR(255) NOT NULL,
+  file_url TEXT,
+  uploaded_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -654,6 +684,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_order_id ON order_status_history(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_created_at ON order_status_history(created_at);
+CREATE INDEX IF NOT EXISTS idx_order_documents_order_id ON order_documents(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_dealer_id ON payments(dealer_id);
 CREATE INDEX IF NOT EXISTS idx_payments_customer_id ON payments(customer_id);
@@ -1077,6 +1110,26 @@ CREATE TRIGGER orders_updated_stock
   AFTER UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION order_updated_trigger();
 
+-- Automatically log every status change (insert or update) into
+-- order_status_history so the Order Timeline UI is always accurate.
+CREATE OR REPLACE FUNCTION log_order_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (TG_OP = 'INSERT') THEN
+    INSERT INTO order_status_history (order_id, status, actor_id, note)
+    VALUES (NEW.id, NEW.status, auth.uid(), 'Order placed');
+  ELSIF (TG_OP = 'UPDATE' AND NEW.status IS DISTINCT FROM OLD.status) THEN
+    INSERT INTO order_status_history (order_id, status, actor_id, note)
+    VALUES (NEW.id, NEW.status, auth.uid(), 'Status updated to ' || NEW.status);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER orders_log_status_change
+  AFTER INSERT OR UPDATE ON orders
+  FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
+
 -- updated_at triggers
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1087,6 +1140,7 @@ CREATE TRIGGER update_inventory_updated_at BEFORE UPDATE ON inventory FOR EACH R
 CREATE TRIGGER update_inventory_reservations_updated_at BEFORE UPDATE ON inventory_reservations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_inventory_transfers_updated_at BEFORE UPDATE ON inventory_transfers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_low_stock_alerts_updated_at BEFORE UPDATE ON low_stock_alerts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1151,6 +1205,8 @@ ALTER TABLE inventory_transfers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE low_stock_alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_status_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_audit_logs ENABLE ROW LEVEL SECURITY;
@@ -1254,6 +1310,22 @@ CREATE POLICY order_items_select_visible ON order_items
 CREATE POLICY order_items_admin_write ON order_items
   FOR ALL TO authenticated USING (is_admin())
   WITH CHECK (is_admin());
+
+-- Order status history
+CREATE POLICY order_status_history_select_visible ON order_status_history
+  FOR SELECT USING (EXISTS (
+    SELECT 1 FROM orders o WHERE o.id = order_id AND order_is_visible(o)
+  ));
+
+-- Order documents
+CREATE POLICY order_documents_select_visible ON order_documents
+  FOR SELECT USING (EXISTS (
+    SELECT 1 FROM orders o WHERE o.id = order_id AND order_is_visible(o)
+  ));
+CREATE POLICY order_documents_insert_seller ON order_documents
+  FOR INSERT WITH CHECK (EXISTS (
+    SELECT 1 FROM orders o WHERE o.id = order_id AND (o.seller_id = auth.uid() OR is_admin())
+  ));
 
 -- Payments
 CREATE POLICY payments_select_parties ON payments

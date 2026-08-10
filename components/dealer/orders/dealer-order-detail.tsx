@@ -1,27 +1,45 @@
 "use client"
 
 import * as React from "react"
-import { useParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FilterSelect } from "@/components/admin/shared/filter-select"
-import { mockOrders, Order, OrderStatus, orderStatusOptions, statusColor, paymentColor } from "@/lib/orders/data"
-import { dateFormatter } from "@/lib/utils"
+import { EmptyState } from "@/components/shared/empty-state"
+import { OrderStatus, orderStatusOptions, statusColor, paymentColor } from "@/lib/orders/data"
+import type { DealerOrderDetail as DealerOrderDetailType } from "@/types/orders"
+import {
+  dispatchDealerOrder,
+  updateDealerOrderStatus,
+  uploadDealerOrderDocument,
+} from "@/lib/orders/dealer-service"
+import { currencyFormatter, dateFormatter } from "@/lib/utils"
 import { cn } from "@/lib/utils"
-import { User, Phone, Mail, MapPin, Truck, CheckCircle2, XCircle, UploadCloud, ArrowUp } from "lucide-react"
+import {
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Truck,
+  CheckCircle2,
+  XCircle,
+  UploadCloud,
+  ArrowUp,
+  PackageX,
+  FileText,
+} from "lucide-react"
 
-const CURRENT_DEALER_ID = "2"
+interface DealerOrderDetailProps {
+  initialOrder: DealerOrderDetailType | null
+}
 
-export function DealerOrderDetail() {
-  const params = useParams<{ id: string }>()
-  const id = params.id
-  const [order, setOrder] = React.useState<Order | null>(() => {
-    const o = mockOrders.find((o) => o.id === id && o.dealer.id === CURRENT_DEALER_ID)
-    return o || null
-  })
+export function DealerOrderDetail({ initialOrder }: DealerOrderDetailProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = React.useTransition()
+  const [error, setError] = React.useState<string | null>(null)
 
   const [status, setStatus] = React.useState<OrderStatus>("PACKED")
   const [courier, setCourier] = React.useState("")
@@ -30,66 +48,61 @@ export function DealerOrderDetail() {
   const [docName, setDocName] = React.useState("")
   const [active, setActive] = React.useState<"status" | "dispatch" | "invoice" | null>(null)
 
-  if (!order) {
+  if (!initialOrder) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-        <p className="text-lg font-medium text-slate-900">Order not found or not assigned</p>
-      </div>
+      <EmptyState
+        icon={PackageX}
+        title="Order not found"
+        description="This order doesn't exist, or it isn't assigned to you."
+      />
     )
   }
 
-  const formatCurrency = (n: number) => `₹${n.toLocaleString("en-IN")}`
+  const order = initialOrder
 
-  const addTimeline = (newStatus: OrderStatus, note?: string) => {
-    const now = new Date().toISOString()
-    setOrder((o) =>
-      o
-        ? { ...o, status: newStatus, timeline: [...o.timeline, { id: Math.random().toString(36).slice(2), status: newStatus, actor: "Dealer", timestamp: now, note }], updated_at: now }
-        : null
-    )
+  function runAction(action: () => Promise<unknown>, onSuccess?: () => void) {
+    setError(null)
+    startTransition(async () => {
+      try {
+        await action()
+        onSuccess?.()
+        router.refresh()
+      } catch (e: any) {
+        setError(e?.message || "Something went wrong. Please try again.")
+      }
+    })
   }
 
-  const handleConfirm = () => addTimeline("CONFIRMED", "Dealer confirmed order")
-  const handleReject = () => addTimeline("CANCELLED", "Dealer rejected order")
-  const handleUpdateStatus = () => addTimeline(status, `Status updated to ${status}`)
+  const handleConfirm = () => runAction(() => updateDealerOrderStatus(order.id, "CONFIRMED"))
+  const handleReject = () => runAction(() => updateDealerOrderStatus(order.id, "CANCELLED"))
+  const handleUpdateStatus = () => runAction(() => updateDealerOrderStatus(order.id, status))
 
-  const handleDispatch = () => {
-    const now = new Date().toISOString()
-    setOrder((o) =>
-      o
-        ? {
-            ...o,
-            status: "SHIPPED",
-            courier,
-            tracking_number: tracking,
-            expected_delivery: expected,
-            documents: [...o.documents, { id: Math.random().toString(36).slice(2), type: "DISPATCH", name: docName.trim() || "dispatch-note.pdf", url: "#", uploaded_at: now }],
-            timeline: [...o.timeline, { id: Math.random().toString(36).slice(2), status: "SHIPPED", actor: "Dealer", timestamp: now, note: `Shipped via ${courier}, tracking ${tracking}` }],
-            updated_at: now,
-          }
-        : null
+  const handleDispatch = () =>
+    runAction(
+      () =>
+        dispatchDealerOrder(order.id, {
+          courier,
+          trackingNumber: tracking,
+          expectedDelivery: expected || undefined,
+          documentName: docName,
+        }),
+      () => {
+        setCourier("")
+        setTracking("")
+        setExpected("")
+        setDocName("")
+        setActive(null)
+      }
     )
-    setCourier("")
-    setTracking("")
-    setExpected("")
-    setDocName("")
-    setActive(null)
-  }
 
-  const handleInvoiceUpload = () => {
-    const now = new Date().toISOString()
-    setOrder((o) =>
-      o
-        ? {
-            ...o,
-            documents: [...o.documents, { id: Math.random().toString(36).slice(2), type: "INVOICE", name: docName.trim() || "invoice.pdf", url: "#", uploaded_at: now }],
-            updated_at: now,
-          }
-        : null
+  const handleInvoiceUpload = () =>
+    runAction(
+      () => uploadDealerOrderDocument(order.id, { type: "INVOICE", name: docName || "invoice.pdf" }),
+      () => {
+        setDocName("")
+        setActive(null)
+      }
     )
-    setDocName("")
-    setActive(null)
-  }
 
   const isShippedOrBeyond = ["SHIPPED", "DELIVERED", "COMPLETED"].includes(order.status)
 
@@ -97,7 +110,7 @@ export function DealerOrderDetail() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{order.id}</h1>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{order.order_number}</h1>
           <p className="mt-1 text-sm text-slate-500">{dateFormatter(order.created_at, "long")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -106,25 +119,45 @@ export function DealerOrderDetail() {
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="rounded-2xl border-slate-200 shadow-sm">
           <CardHeader className="pb-3"><CardTitle className="text-lg font-semibold">Customer</CardTitle></CardHeader>
           <CardContent className="space-y-3 pt-0">
-            <Info label="Name" value={order.customer.name} icon={User} />
-            <Info label="Phone" value={order.customer.phone} icon={Phone} />
+            <Info label="Name" value={order.customer.business_name || order.customer.name} icon={User} />
+            <Info label="Phone" value={order.customer.phone || "—"} icon={Phone} />
             <Info label="Email" value={order.customer.email} icon={Mail} />
-            <Info label="Address" value={`${order.customer.address}, ${order.customer.city}, ${order.customer.state}`} icon={MapPin} />
+            <Info
+              label="Address"
+              value={[order.customer.address, order.customer.city, order.customer.state].filter(Boolean).join(", ") || "—"}
+              icon={MapPin}
+            />
           </CardContent>
         </Card>
 
         <Card className="rounded-2xl border-slate-200 shadow-sm">
           <CardHeader className="pb-3"><CardTitle className="text-lg font-semibold">Order Summary</CardTitle></CardHeader>
           <CardContent className="space-y-2 pt-0 text-sm text-slate-600">
-            <div className="flex justify-between"><span>Subtotal</span><span className="font-medium text-slate-900">{formatCurrency(order.subtotal)}</span></div>
-            <div className="flex justify-between"><span>Tax</span><span className="font-medium text-slate-900">{formatCurrency(order.tax_total)}</span></div>
-            <div className="flex justify-between"><span>Discount</span><span className="font-medium text-slate-900">-{formatCurrency(order.discount_total)}</span></div>
-            <div className="flex justify-between"><span>Shipping</span><span className="font-medium text-slate-900">{formatCurrency(order.shipping_charges)}</span></div>
-            <div className="mt-2 flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-slate-900"><span>Grand Total</span><span>{formatCurrency(order.grand_total)}</span></div>
+            <div className="flex justify-between"><span>Subtotal</span><span className="font-medium text-slate-900">{currencyFormatter(order.subtotal)}</span></div>
+            <div className="flex justify-between"><span>Tax</span><span className="font-medium text-slate-900">{currencyFormatter(order.tax_total)}</span></div>
+            <div className="flex justify-between"><span>Discount</span><span className="font-medium text-slate-900">-{currencyFormatter(order.discount_total)}</span></div>
+            <div className="flex justify-between"><span>Shipping</span><span className="font-medium text-slate-900">{currencyFormatter(order.shipping_charges)}</span></div>
+            <div className="mt-2 flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-slate-900"><span>Grand Total</span><span>{currencyFormatter(order.grand_total)}</span></div>
+            {(order.payment_method || order.courier) && (
+              <div className="mt-2 space-y-1 border-t border-slate-100 pt-2 text-xs text-slate-500">
+                {order.payment_method && <p>Payment method: <span className="font-medium text-slate-700">{order.payment_method}</span></p>}
+                {order.courier && (
+                  <p>
+                    Courier: <span className="font-medium text-slate-700">{order.courier}</span>
+                    {order.tracking_number && <> · Tracking: <span className="font-medium text-slate-700">{order.tracking_number}</span></>}
+                  </p>
+                )}
+                {order.expected_delivery && <p>Expected delivery: <span className="font-medium text-slate-700">{dateFormatter(order.expected_delivery, "short")}</span></p>}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -137,8 +170,9 @@ export function DealerOrderDetail() {
               <thead>
                 <tr className="border-b border-slate-100">
                   <th className="py-2 text-left text-xs font-semibold uppercase text-slate-500">Product</th>
-                  <th className="py-2 text-left text-xs font-semibold uppercase text-slate-500">Brand / Category</th>
+                  <th className="py-2 text-left text-xs font-semibold uppercase text-slate-500">SKU</th>
                   <th className="py-2 text-right text-xs font-semibold uppercase text-slate-500">Qty</th>
+                  <th className="py-2 text-right text-xs font-semibold uppercase text-slate-500">Unit Price</th>
                   <th className="py-2 text-right text-xs font-semibold uppercase text-slate-500">Total</th>
                 </tr>
               </thead>
@@ -146,9 +180,10 @@ export function DealerOrderDetail() {
                 {order.items.map((item) => (
                   <tr key={item.id} className="border-b border-slate-100">
                     <td className="py-3 text-sm font-medium text-slate-900">{item.product_name}</td>
-                    <td className="py-3 text-sm text-slate-600">{item.brand} / {item.category}</td>
+                    <td className="py-3 text-sm text-slate-600">{item.sku || "—"}</td>
                     <td className="py-3 text-right text-sm text-slate-700">{item.quantity}</td>
-                    <td className="py-3 text-right text-sm font-semibold text-slate-900">{formatCurrency(item.quantity * (item.unit_price + item.tax - item.discount))}</td>
+                    <td className="py-3 text-right text-sm text-slate-700">{currencyFormatter(item.unit_price)}</td>
+                    <td className="py-3 text-right text-sm font-semibold text-slate-900">{currencyFormatter(item.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -163,19 +198,19 @@ export function DealerOrderDetail() {
           <div className="flex flex-wrap gap-2">
             {order.status === "PENDING" && (
               <>
-                <Button onClick={handleConfirm} className="bg-emerald-600 hover:bg-emerald-700"><CheckCircle2 className="mr-2 h-4 w-4" />Confirm</Button>
-                <Button onClick={handleReject} variant="destructive"><XCircle className="mr-2 h-4 w-4" />Reject</Button>
+                <Button onClick={handleConfirm} disabled={isPending} className="bg-emerald-600 hover:bg-emerald-700"><CheckCircle2 className="mr-2 h-4 w-4" />Confirm</Button>
+                <Button onClick={handleReject} disabled={isPending} variant="destructive"><XCircle className="mr-2 h-4 w-4" />Reject</Button>
               </>
             )}
-            <Button variant="outline" onClick={() => setActive("status")}><ArrowUp className="mr-2 h-4 w-4" />Update Status</Button>
-            <Button variant="outline" onClick={() => setActive("dispatch")} disabled={isShippedOrBeyond}><Truck className="mr-2 h-4 w-4" />Dispatch</Button>
-            <Button variant="outline" onClick={() => setActive("invoice")}><UploadCloud className="mr-2 h-4 w-4" />Upload Invoice</Button>
+            <Button variant="outline" onClick={() => setActive("status")} disabled={isPending}><ArrowUp className="mr-2 h-4 w-4" />Update Status</Button>
+            <Button variant="outline" onClick={() => setActive("dispatch")} disabled={isPending || isShippedOrBeyond}><Truck className="mr-2 h-4 w-4" />Dispatch</Button>
+            <Button variant="outline" onClick={() => setActive("invoice")} disabled={isPending}><UploadCloud className="mr-2 h-4 w-4" />Upload Invoice</Button>
           </div>
 
           {active === "status" && (
             <div className="space-y-3 rounded-xl bg-slate-50 p-4">
               <FilterSelect value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)} options={orderStatusOptions.filter((s) => s.value !== "all")} />
-              <Button onClick={handleUpdateStatus}>Update Status</Button>
+              <Button onClick={handleUpdateStatus} disabled={isPending}>Update Status</Button>
             </div>
           )}
 
@@ -187,15 +222,36 @@ export function DealerOrderDetail() {
                 <div className="space-y-2"><Label>Expected Delivery</Label><Input type="date" value={expected} onChange={(e) => setExpected(e.target.value)} /></div>
                 <div className="space-y-2"><Label>Document Name</Label><Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="dispatch-note.pdf" /></div>
               </div>
-              <Button onClick={handleDispatch}>Mark Shipped</Button>
+              <Button onClick={handleDispatch} disabled={isPending || !courier || !tracking}>Mark Shipped</Button>
             </div>
           )}
 
           {active === "invoice" && (
             <div className="space-y-3 rounded-xl bg-slate-50 p-4">
               <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="invoice.pdf" />
-              <Button onClick={handleInvoiceUpload}>Upload Invoice</Button>
+              <Button onClick={handleInvoiceUpload} disabled={isPending}>Upload Invoice</Button>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl border-slate-200 shadow-sm">
+        <CardHeader className="pb-3"><CardTitle className="text-lg font-semibold">Documents</CardTitle></CardHeader>
+        <CardContent className="pt-0">
+          {order.documents.length === 0 ? (
+            <p className="text-sm text-slate-500">No documents uploaded yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {order.documents.map((doc) => (
+                <li key={doc.id} className="flex items-center gap-3">
+                  <FileText className="h-4 w-4 shrink-0 text-slate-400" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-900">{doc.name}</p>
+                    <p className="text-xs text-slate-500">{doc.type} · {dateFormatter(doc.created_at, "long")}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </CardContent>
       </Card>
@@ -203,18 +259,22 @@ export function DealerOrderDetail() {
       <Card className="rounded-2xl border-slate-200 shadow-sm">
         <CardHeader className="pb-3"><CardTitle className="text-lg font-semibold">Timeline</CardTitle></CardHeader>
         <CardContent className="pt-0">
-          <ul className="space-y-4">
-            {order.timeline.map((t) => (
-              <li key={t.id} className="flex gap-3">
-                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
-                <div>
-                  <p className="text-sm font-medium text-slate-900 capitalize">{t.status.toLowerCase()}</p>
-                  {t.note && <p className="text-sm text-slate-600">{t.note}</p>}
-                  <p className="text-xs text-slate-500">{t.actor} • {dateFormatter(t.timestamp, "long")}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {order.timeline.length === 0 ? (
+            <p className="text-sm text-slate-500">No timeline events yet.</p>
+          ) : (
+            <ul className="space-y-4">
+              {order.timeline.map((t) => (
+                <li key={t.id} className="flex gap-3">
+                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                  <div>
+                    <p className="text-sm font-medium text-slate-900 capitalize">{t.status.toLowerCase()}</p>
+                    {t.note && <p className="text-sm text-slate-600">{t.note}</p>}
+                    <p className="text-xs text-slate-500">{t.actor} • {dateFormatter(t.timestamp, "long")}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

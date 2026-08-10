@@ -2,7 +2,17 @@
 export type UserRole = 'ADMIN' | 'DEALER'
 export type ProductStatus = 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK'
 export type EnquiryStatus = 'PENDING' | 'ASSIGNED' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED'
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+export type OrderStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'PROCESSING'
+  | 'PACKED'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'RETURNED'
+  | 'REFUNDED'
 export type PaymentStatus =
   | 'PENDING'
   | 'CREATED'
@@ -140,9 +150,48 @@ export interface Order {
   price: number
   subtotal: number
   tax: number
+  discount: number
+  shipping_charges: number
   total: number
   status: OrderStatus
   payment_status: PaymentStatus
+  courier: string | null
+  tracking_number: string | null
+  expected_delivery: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface OrderItemRow {
+  id: string
+  order_id: string
+  product_id: string
+  quantity: number
+  price: number
+  subtotal: number
+  tax: number
+  discount: number
+  total: number
+  created_at: string
+  updated_at: string
+}
+
+export interface OrderStatusHistory {
+  id: string
+  order_id: string
+  status: OrderStatus
+  actor_id: string | null
+  note: string | null
+  created_at: string
+}
+
+export interface OrderDocumentRow {
+  id: string
+  order_id: string
+  type: 'INVOICE' | 'DISPATCH' | 'OTHER'
+  name: string
+  file_url: string | null
+  uploaded_by: string | null
   created_at: string
 }
 
@@ -367,8 +416,23 @@ export type Database = {
       }
       orders: {
         Row: Order
-        Insert: Omit<Order, 'id' | 'order_number' | 'created_at'>
+        Insert: Omit<Order, 'id' | 'order_number' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Order, 'id' | 'order_number' | 'created_at'>>
+      }
+      order_items: {
+        Row: OrderItemRow
+        Insert: Omit<OrderItemRow, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<OrderItemRow, 'id' | 'created_at'>>
+      }
+      order_status_history: {
+        Row: OrderStatusHistory
+        Insert: Omit<OrderStatusHistory, 'id' | 'created_at'>
+        Update: Partial<Omit<OrderStatusHistory, 'id' | 'created_at'>>
+      }
+      order_documents: {
+        Row: OrderDocumentRow
+        Insert: Omit<OrderDocumentRow, 'id' | 'created_at'>
+        Update: Partial<Omit<OrderDocumentRow, 'id' | 'created_at'>>
       }
       payments: {
         Row: Payment
