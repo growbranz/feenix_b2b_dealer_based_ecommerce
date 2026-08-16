@@ -23,6 +23,21 @@ export const metadata: Metadata = {
 }
 
 interface ProductsPageProps {
+  searchParams: Promise<{
+    search?: string
+    category?: string
+    brand?: string
+    model?: string
+    minPrice?: string
+    maxPrice?: string
+    condition?: string
+    availability?: string
+    sortBy?: string
+    page?: string
+  }>
+}
+
+interface ProductsContentProps {
   searchParams: {
     search?: string
     category?: string
@@ -37,7 +52,7 @@ interface ProductsPageProps {
   }
 }
 
-async function ProductsContent({ searchParams }: ProductsPageProps) {
+async function ProductsContent({ searchParams }: ProductsContentProps) {
   const params = {
     search: searchParams.search,
     category: searchParams.category,
@@ -129,7 +144,8 @@ async function ProductsContent({ searchParams }: ProductsPageProps) {
   )
 }
 
-export default function ProductsPage({ searchParams }: ProductsPageProps) {
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  const resolvedSearchParams = await searchParams
   return (
     <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-24 space-y-10">
       <SectionHeader
@@ -154,7 +170,7 @@ export default function ProductsPage({ searchParams }: ProductsPageProps) {
       </div>
 
       <Suspense fallback={<ProductGridSkeleton count={12} />}>
-        <ProductsContent searchParams={searchParams} />
+        <ProductsContent searchParams={resolvedSearchParams} />
       </Suspense>
     </div>
   )

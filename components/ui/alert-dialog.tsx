@@ -28,16 +28,31 @@ function AlertDialog({ open = false, onOpenChange, children }: AlertDialogProps)
 
 const AlertDialogTrigger = React.forwardRef<
   HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, ...props }, ref) => {
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
+>(({ className, asChild = false, children, onClick, ...props }, ref) => {
   const { onOpenChange } = React.useContext(AlertDialogContext)
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    onOpenChange(true)
+    if (onClick) onClick(e)
+  }
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      ref,
+      onClick: handleClick,
+    })
+  }
+
   return (
     <Button
       ref={ref}
       className={className}
-      onClick={() => onOpenChange(true)}
+      onClick={handleClick}
       {...props}
-    />
+    >
+      {children}
+    </Button>
   )
 })
 AlertDialogTrigger.displayName = "AlertDialogTrigger"

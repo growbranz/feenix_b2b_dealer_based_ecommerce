@@ -17,7 +17,8 @@ import {
   Bar,
   Legend,
 } from "recharts"
-import { monthlyUploads, productStatusData, inventoryData, CHART_COLORS } from "./data"
+import { monthlyUploads, inventoryData, CHART_COLORS } from "./data"
+import type { ProductStatusData } from "@/lib/dealer/dashboard-service"
 
 const colors = [
   CHART_COLORS.primary,
@@ -35,7 +36,11 @@ const tooltipStyle = {
   color: "hsl(var(--card-foreground))",
 }
 
-export function DealerCharts() {
+interface DealerChartsProps {
+  productStatusData: ProductStatusData[]
+}
+
+export function DealerCharts({ productStatusData }: DealerChartsProps) {
   return (
     <section className="grid gap-6 xl:grid-cols-3">
       {/* Monthly Uploads */}

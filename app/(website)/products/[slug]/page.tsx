@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { EmptyState } from "@/components/website/empty-state"
 import { ProductDetailsSkeleton } from "@/components/website/skeletons"
-import { Check, MapPin, Star, MessageSquare, Share2, Heart } from "lucide-react"
+import { EnquiryDialog } from "@/components/website/enquiry-dialog"
+import { MapPin, MessageSquare, Share2, Heart } from "lucide-react"
 import Link from "next/link"
 import { getProductBySlug, getRelatedProducts } from "@/services/products"
 import { notFound } from "next/navigation"
@@ -16,13 +17,14 @@ import { Suspense } from "react"
 import { Metadata } from "next"
 
 interface ProductDetailsPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: ProductDetailsPageProps): Promise<Metadata> {
-  const product = await getProductBySlug(params.slug)
+  const { slug } = await params
+  const product = await getProductBySlug(slug)
   
   if (!product) {
     return {
@@ -43,7 +45,8 @@ export async function generateMetadata({ params }: ProductDetailsPageProps): Pro
   }
 }
 
-async function ProductDetailsContent({ slug }: { slug: string }) {
+async function ProductDetailsContent({ params }: ProductDetailsPageProps) {
+  const { slug } = await params
   const product = await getProductBySlug(slug)
 
   if (!product) {
@@ -156,10 +159,14 @@ async function ProductDetailsContent({ slug }: { slug: string }) {
 
           {/* Actions */}
           <div className="flex gap-3">
-            <Button size="lg" className="flex-1 rounded-full bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 transition-all border-0" disabled={isOutOfStock}>
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Send Enquiry
-            </Button>
+            <EnquiryDialog
+              productId={product.id}
+              productTitle={product.title}
+              productDealerId={product.dealer.id}
+              minimumOrder={product.minimum_order}
+              stock={product.stock}
+              isOutOfStock={isOutOfStock}
+            />
             <Button size="lg" variant="outline" className="rounded-full border-slate-200 hover:border-blue-200 hover:bg-blue-50/50 transition-all">
               <Heart className="h-4 w-4 text-slate-600" />
             </Button>
@@ -167,10 +174,6 @@ async function ProductDetailsContent({ slug }: { slug: string }) {
               <Share2 className="h-4 w-4 text-slate-600" />
             </Button>
           </div>
-
-          <p className="text-xs text-slate-600 text-center">
-            Enquiry functionality coming soon. Currently disabled for demo purposes.
-          </p>
         </div>
       </div>
 
@@ -246,7 +249,7 @@ async function ProductDetailsContent({ slug }: { slug: string }) {
 export default function ProductDetailsPage({ params }: ProductDetailsPageProps) {
   return (
     <Suspense fallback={<ProductDetailsSkeleton />}>
-      <ProductDetailsContent slug={params.slug} />
+      <ProductDetailsContent params={params} />
     </Suspense>
   )
 }

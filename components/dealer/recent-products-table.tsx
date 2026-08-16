@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
-import { recentProducts } from "./data"
-import type { RecentProduct, RecentProductStatus } from "./types"
+import type { RecentProduct } from "@/lib/dealer/dashboard-service"
+import type { RecentProductStatus } from "./types"
 
 const statusVariant = (status: RecentProductStatus) => {
   switch (status) {
@@ -30,7 +30,11 @@ const statusVariant = (status: RecentProductStatus) => {
 const statusLabel = (status: RecentProductStatus) =>
   status.replace("_", " ").replace(/\b\w/g, (char) => char.toUpperCase())
 
-export function RecentProductsTable() {
+interface RecentProductsTableProps {
+  recentProducts: RecentProduct[]
+}
+
+export function RecentProductsTable({ recentProducts }: RecentProductsTableProps) {
   const [search, setSearch] = React.useState("")
   const [page, setPage] = React.useState(1)
   const limit = 5
@@ -45,7 +49,7 @@ export function RecentProductsTable() {
         p.model.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q)
     )
-  }, [search])
+  }, [search, recentProducts])
 
   const totalPages = Math.ceil(filtered.length / limit) || 1
   const start = (page - 1) * limit

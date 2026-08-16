@@ -110,6 +110,12 @@ export async function getProducts(params: ProductSearchParams = {}) {
     return { products: [], pagination: createPaginationMeta(0, page, limit) }
   }
 
+  // console.log('getProducts returned', products?.length || 0, 'products')
+  // if (products && products.length > 0) {
+  //   console.log('First product slug:', products[0].slug, 'id:', products[0].id)
+  //   console.log('All product slugs:', products.map(p => ({ id: p.id, slug: p.slug, title: p.title })))
+  // }
+
   // Transform data to include primary_image
   const transformedProducts = (products || []).map((product: any) => {
     const images = product.images || []
@@ -142,7 +148,7 @@ export async function getProductBySlug(slug: string) {
     `)
     .eq('slug', slug)
     .eq('status', 'ACTIVE')
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('Error fetching product:', error)
