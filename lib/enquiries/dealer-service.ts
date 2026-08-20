@@ -272,23 +272,39 @@ export async function sendEnquiryQuotation(
   enquiryId: string,
   quote: { price?: number | null; deliveryDays?: number | null; warranty?: string; remarks?: string }
 ) {
+  console.log("sendEnquiryQuotation payload:", { enquiryId, quote })
+
   const userProfile = await getCurrentUserProfile()
   if (!userProfile?.profile?.id) throw new Error("Unauthorized")
 
   await assertDealerOwnsEnquiry(enquiryId, userProfile.profile.id)
 
-  const conversation = await getOrCreateEnquiryConversation(enquiryId)
-  const message = await sendMessage(conversation.id, {
-    messageType: "quotation",
-    content: quote.remarks || "Quotation sent",
-    metadata: {
-      price: quote.price ?? null,
-      delivery_days: quote.deliveryDays ?? null,
-      warranty: quote.warranty || null,
-      remarks: quote.remarks || null,
-    },
-  })
+  const sanitizedPrice = typeof quote.price === "number" && !Number.isNaN(quote.price) ? quote.price : null
+  const sanitizedDeliveryDays = typeof quote.deliveryDays === "number" && !Number.isNaN(quote.deliveryDays) ? quote.deliveryDays : null
 
-  revalidatePath(`/dealer/enquiries/${enquiryId}`)
-  return { conversationId: conversation.id, message }
+  try {
+    const conversation = await getOrCreateEnquiryConversation(enquiryId)
+    const message = await sendMessage(conversation.id, {
+      messageType: "quotation",
+      content: quote.remarks || "Quotation sent",
+      metadata: {
+        price: sanitizedPrice,
+        delivery_days: sanitizedDeliveryDays,
+        warranty: quote.warranty || null,
+        remarks: quote.remarks || null,
+      },
+    })
+
+    revalidatePath(`/dealer/enquiries/${enquiryId}`)
+    return { conversationId: conversation.id, message }
+  } catch (error: any) {
+    console.error("Send quotation error:", {
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint,
+      code: error?.code,
+      error,
+    })
+    throw error
+  }
 }

@@ -135,20 +135,32 @@ export async function sendMessage(
 
   const preview = content || (messageType === "text" ? "" : `[${messageType}]`)
 
+  const messagePayload = {
+    conversation_id: conversationId,
+    sender_id: user.id,
+    content: preview,
+    message_type: messageType,
+    metadata,
+    reply_to: replyTo || null,
+  }
+  console.log("sendMessage payload:", JSON.stringify(messagePayload, null, 2))
+
   const { data, error } = await db
     .from("messages")
-    .insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      content: preview,
-      message_type: messageType,
-      metadata,
-      reply_to: replyTo || null,
-    })
+    .insert(messagePayload)
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error("sendMessage insert error:", {
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint,
+      code: error?.code,
+      error,
+    })
+    throw error
+  }
 
   const { data: participants } = await db
     .from("conversation_participants")
@@ -157,7 +169,17 @@ export async function sendMessage(
     .neq("user_id", user.id)
 
   for (const p of participants || []) {
-    await notifyOnMessageReceived(conversationId, user.email || "User", p.user_id, preview, user.id)
+    try {
+      await notifyOnMessageReceived(conversationId, user.email || "User", p.user_id, preview, user.id)
+    } catch (notificationError: any) {
+      console.error("sendMessage notification error:", {
+        message: notificationError?.message,
+        details: notificationError?.details,
+        hint: notificationError?.hint,
+        code: notificationError?.code,
+        error: notificationError,
+      })
+    }
   }
 
   revalidatePath(`/admin/messages`)

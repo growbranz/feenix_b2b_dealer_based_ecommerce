@@ -3,15 +3,22 @@ import type { Database } from "@/types"
 
 let _client: ReturnType<typeof createClient<Database>> | null = null
 
+export function validateSupabaseAdminConfig() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL in environment configuration.")
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY in environment configuration.")
+  }
+}
+
 function getClient() {
   if (_client) return _client
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  validateSupabaseAdminConfig()
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Supabase service role key is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.")
-  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
   _client = createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: {
