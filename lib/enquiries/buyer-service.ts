@@ -33,7 +33,7 @@ const BUYER_ENQUIRY_SELECT = `
   created_at,
   updated_at,
   seller:profiles!enquiries_seller_id_fkey(id, name, business_name, email, phone, city, state, address),
-  product:products(id, title, sku, price, category:categories(name), brand:brands(name), model:models(name), images),
+  product:products(id, title, sku, price, category:categories(name), brand:brands(name), model:models(name)),
   order:orders(id, order_number, status, payment_status)
 `
 
@@ -111,7 +111,16 @@ export async function getBuyerEnquiries(
 
   const { data, error } = await query
   if (error) {
-    console.error("getBuyerEnquiries error:", error)
+    console.error(
+      "getBuyerEnquiries error:",
+      JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+    )
+    console.error("getBuyerEnquiries error fields:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    })
     return { data: [], count: 0, page, limit, totalPages: 0 }
   }
 
