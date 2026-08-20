@@ -4,8 +4,8 @@ import * as React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Menu, X, Search, ChevronDown, User, LogIn, UserPlus, ShoppingCart, Sparkles, Globe } from "lucide-react"
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion"
+import { Menu, X, Search, ChevronDown, User, LogIn, UserPlus, ShoppingCart, Sparkles, Home, Grid3X3, Package, Info, Mail } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 export function WebsiteNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
@@ -13,19 +13,6 @@ export function WebsiteNavbar() {
   const [searchOpen, setSearchOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [hoveredLink, setHoveredLink] = React.useState<string | null>(null)
-  
-  const { scrollY } = useScroll()
-  const navbarBackground = useTransform(
-    scrollY,
-    [0, 50, 100],
-    ["rgba(255, 255, 255, 0.7)", "rgba(255, 255, 255, 0.85)", "rgba(255, 255, 255, 0.95)"]
-  )
-  const navbarBlur = useTransform(scrollY, [0, 50], [8, 20])
-  const navbarShadow = useTransform(
-    scrollY,
-    [0, 50],
-    ["0 1px 2px rgba(0, 0, 0, 0.05)", "0 4px 20px -8px rgba(30, 41, 59, 0.1)"]
-  )
 
   const categories = [
     { name: "Display", href: "/categories/display", icon: "📱", count: 245 },
@@ -39,348 +26,257 @@ export function WebsiteNavbar() {
     { name: "IC Chips", href: "/categories/ic-chips", icon: "💾", count: 67 },
   ]
 
+  const navItems = [
+    { href: '/', label: 'Home', icon: Home },
+    { href: '/categories', label: 'Categories', icon: Grid3X3 },
+    { href: '/products', label: 'Products', icon: Package },
+    { href: '/about', label: 'About', icon: Info },
+    { href: '/contact', label: 'Contact', icon: Mail },
+  ]
+
   return (
-    <motion.header
-      style={{
-        background: navbarBackground,
-        backdropFilter: `blur(${navbarBlur}px)`,
-        boxShadow: navbarShadow,
-      }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200/40 transition-all duration-300"
-    >
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-        <div className="flex h-[4.5rem] items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="relative"
-            >
-              <motion.div
-                className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-0 group-hover:opacity-30 transition-opacity duration-300"
+    <>
+      {/* Desktop Header */}
+      <header className="hidden md:block fixed top-4 left-4 right-4 z-50">
+        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg border border-slate-100">
+          <div className="flex items-center justify-between px-6 py-4">
+            {/* Logo */}
+            <Link href="/" className="flex items-center">
+              <img 
+                src="/images/feenix-repair-logo.png" 
+                alt="Feenix Repair" 
+                className="h-10 w-auto object-contain"
               />
-              <div className="relative flex items-center space-x-2">
-                <motion.div
-                  animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                  className="text-2xl"
-                >
-                  🔥
-                </motion.div>
-                <div className="text-2xl font-extrabold font-poppins bg-gradient-to-r from-slate-900 via-blue-700 to-purple-600 bg-clip-text text-transparent tracking-tight">
-                  Feenix Repair
-                </div>
-              </div>
-            </motion.div>
-          </Link>
+            </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1">
-            <NavLink href="/" label="Home" hoveredLink={hoveredLink} setHoveredLink={setHoveredLink} />
-
-            {/* Categories with Mega Menu */}
-            <div
-              className="relative"
-              onMouseEnter={() => setCategoriesOpen(true)}
-              onMouseLeave={() => setCategoriesOpen(false)}
-            >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`flex items-center space-x-1 text-sm font-medium transition-colors relative group ${
-                  categoriesOpen || hoveredLink === 'categories' 
-                    ? 'text-blue-600' 
-                    : 'text-slate-700 hover:text-blue-600'
-                }`}
-                onMouseEnter={() => setHoveredLink('categories')}
-                onMouseLeave={() => setHoveredLink(null)}
+            {/* Navigation */}
+            <nav className="flex items-center space-x-8">
+              <NavLink href="/" label="Home" hoveredLink={hoveredLink} setHoveredLink={setHoveredLink} />
+              
+              {/* Categories with Dropdown */}
+              <div
+                className="relative"
+                onMouseEnter={() => setCategoriesOpen(true)}
+                onMouseLeave={() => setCategoriesOpen(false)}
               >
-                <span>Categories</span>
-                <motion.div
-                  animate={{ rotate: categoriesOpen ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
+                <button
+                  className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
+                    categoriesOpen || hoveredLink === 'categories' 
+                      ? 'text-blue-600' 
+                      : 'text-slate-700 hover:text-blue-600'
+                  }`}
+                  onMouseEnter={() => setHoveredLink('categories')}
+                  onMouseLeave={() => setHoveredLink(null)}
                 >
-                  <ChevronDown className="h-4 w-4" />
-                </motion.div>
-                {(categoriesOpen || hoveredLink === 'categories') && (
-                  <motion.span
-                    layoutId="navbar-underline"
-                    className="absolute -bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </motion.button>
+                  <span>Categories</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${categoriesOpen ? 'rotate-180' : ''}`} />
+                  {hoveredLink === 'categories' && (
+                    <span className="absolute -bottom-8 left-0 right-0 h-[2px] bg-blue-600" />
+                  )}
+                </button>
 
-              <AnimatePresence>
-                {categoriesOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-80 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(30,41,59,0.15)] border border-slate-100/80 overflow-hidden"
-                  >
-                    <div className="p-2">
-                      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-3 mb-2">
-                        <div className="flex items-center space-x-2 text-sm font-semibold text-slate-800">
-                          <Sparkles className="h-4 w-4 text-blue-600" />
-                          <span>Popular Categories</span>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 gap-1">
-                        {categories.map((category, index) => (
-                          <motion.div
+                <AnimatePresence>
+                  {categoriesOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden"
+                    >
+                      <div className="p-2">
+                        {categories.map((category) => (
+                          <Link
                             key={category.name}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.03 }}
+                            href={category.href}
+                            className="flex items-center justify-between px-3 py-2 text-sm text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                           >
-                            <Link
-                              href={category.href}
-                              className="flex items-center justify-between px-4 py-3 text-sm text-slate-700 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600 transition-all group"
-                            >
-                              <div className="flex items-center space-x-3">
-                                <span className="text-lg">{category.icon}</span>
-                                <span className="font-medium">{category.name}</span>
-                              </div>
-                              <span className="text-xs text-slate-400 group-hover:text-blue-500">{category.count}</span>
-                            </Link>
-                          </motion.div>
+                            <div className="flex items-center space-x-2">
+                              <span>{category.icon}</span>
+                              <span>{category.name}</span>
+                            </div>
+                            <span className="text-xs text-slate-400">{category.count}</span>
+                          </Link>
                         ))}
                       </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <NavLink href="/products" label="Products" hoveredLink={hoveredLink} setHoveredLink={setHoveredLink} />
-            <NavLink href="/about" label="About" hoveredLink={hoveredLink} setHoveredLink={setHoveredLink} />
-            <NavLink href="/contact" label="Contact" hoveredLink={hoveredLink} setHoveredLink={setHoveredLink} />
-          </nav>
-
-          {/* Right Side Actions */}
-          <div className="flex items-center space-x-3">
-            {/* Cart Icon */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="relative p-2.5 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-full transition-colors group"
-            >
-              <ShoppingCart className="h-5 w-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 h-5 w-5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-[10px] font-semibold text-white flex items-center justify-center"
-                  >
-                    3
-                  </motion.span>
-                </motion.button>
-
-            {/* Search Bar */}
-            <div className="hidden md:flex items-center">
-              <AnimatePresence mode="wait">
-                {searchOpen ? (
-                  <motion.div
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: 280, opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="overflow-hidden"
-                  >
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        placeholder="Search products..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-64 h-10 pl-10 pr-10 rounded-full border-slate-200 bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                        autoFocus
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery("")}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSearchOpen(true)}
-                    aria-label="Open search"
-                    className="p-2.5 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-full transition-colors group"
-                  >
-                    <Search className="h-5 w-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Auth Buttons */}
-            <div className="hidden md:flex items-center space-x-2">
-              <Link href="/auth/login">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-2 rounded-full border-2 border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all shadow-sm hover:shadow-md"
-                  >
-                    <LogIn className="h-4 w-4" />
-                    Login
-                  </Button>
-                </motion.div>
-              </Link>
-              <Link href="/auth/register">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button 
-                    size="sm" 
-                    className="gap-2 rounded-full bg-gradient-to-r from-blue-700 via-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:shadow-xl transition-all border-0 relative overflow-hidden"
-                  >
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                      animate={{
-                        x: ['-100%', '100%'],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatDelay: 3,
-                      }}
-                    />
-                    <UserPlus className="h-4 w-4 relative z-10" />
-                    <span className="relative z-10">Register</span>
-                  </Button>
-                </motion.div>
-              </Link>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
-                <AnimatePresence mode="wait">
-                  {mobileMenuOpen ? (
-                    <motion.div
-                      key="close"
-                      initial={{ rotate: -90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: 90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <X className="h-6 w-6 text-slate-700" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="menu"
-                      initial={{ rotate: 90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: -90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Menu className="h-6 w-6 text-slate-700" />
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </Button>
-            </motion.div>
+              </div>
+
+              <NavLink href="/products" label="Products" hoveredLink={hoveredLink} setHoveredLink={setHoveredLink} />
+              <NavLink href="/about" label="About" hoveredLink={hoveredLink} setHoveredLink={setHoveredLink} />
+              <NavLink href="/contact" label="Contact" hoveredLink={hoveredLink} setHoveredLink={setHoveredLink} />
+            </nav>
+
+            {/* Right Actions */}
+            <div className="flex items-center space-x-4">
+              {/* Cart */}
+              <button className="relative p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <ShoppingCart className="h-5 w-5 text-slate-700" />
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-blue-600 rounded-full text-[10px] font-semibold text-white flex items-center justify-center">
+                  3
+                </span>
+              </button>
+
+              {/* Search */}
+              <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <Search className="h-5 w-5 text-slate-700" />
+              </button>
+
+              {/* Auth Buttons */}
+              <div className="flex items-center space-x-2">
+                <Link href="/auth/login">
+                  <Button variant="outline" size="sm" className="gap-2 rounded-full border-slate-200 text-slate-700 hover:bg-slate-50">
+                    <LogIn className="h-4 w-4" />
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/auth/register">
+                  <Button size="sm" className="gap-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                    <UserPlus className="h-4 w-4" />
+                    Register
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Mobile Menu */}
+      {/* Mobile Header */}
+      <header className="md:hidden fixed top-4 left-4 right-4 z-50">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-100">
+          <div className="flex items-center justify-between px-4 py-3">
+            {/* Logo */}
+            <Link href="/" className="flex items-center">
+              <img 
+                src="/images/feenix-repair-logo.png" 
+                alt="Feenix Repair" 
+                className="h-8 w-auto object-contain"
+              />
+            </Link>
+
+            {/* Actions */}
+            <div className="flex items-center space-x-2">
+              {/* Cart */}
+              <button className="relative p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <ShoppingCart className="h-5 w-5 text-slate-700" />
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-blue-600 rounded-full text-[10px] font-semibold text-white flex items-center justify-center">
+                  3
+                </span>
+              </button>
+
+              {/* Search */}
+              <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <Search className="h-5 w-5 text-slate-700" />
+              </button>
+
+              {/* Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-6 w-6 text-slate-700" />
+                ) : (
+                  <Menu className="h-6 w-6 text-slate-700" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile/Tablet Sidebar Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="lg:hidden border-t border-slate-200/60 bg-white/95 backdrop-blur-md overflow-hidden"
-          >
-            <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6 space-y-4">
-              <nav className="flex flex-col space-y-2">
-                {[
-                  { href: '/', label: 'Home' },
-                  { href: '/categories', label: 'Categories' },
-                  { href: '/products', label: 'Products' },
-                  { href: '/about', label: 'About' },
-                  { href: '/contact', label: 'Contact' },
-                ].map((item, index) => (
-                  <motion.div
-                    key={item.href}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Link
-                      href={item.href}
-                      className="text-sm font-medium text-slate-700 transition-colors hover:text-blue-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 py-3 px-4 rounded-xl block"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  </motion.div>
-                ))}
-              </nav>
-
-              <div className="pt-4 border-t border-slate-200/60 space-y-3">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input 
-                      placeholder="Search products..." 
-                      className="w-full pl-10 rounded-xl border-slate-200 bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 md:hidden"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 left-0 bottom-0 w-80 bg-white rounded-r-2xl shadow-2xl z-50 overflow-hidden"
+            >
+              <div className="flex flex-col h-full">
+                {/* Sidebar Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                  <Link href="/" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
+                    <img 
+                      src="/images/feenix-repair-logo.png" 
+                      alt="Feenix Repair" 
+                      className="h-8 w-auto object-contain"
                     />
-                  </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35 }}
-                >
+                  </Link>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  >
+                    <X className="h-5 w-5 text-slate-700" />
+                  </button>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
+                  {navItems.map((item, index) => {
+                    const Icon = item.icon
+                    return (
+                      <motion.div
+                        key={item.href}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <Link
+                          href={item.href}
+                          className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${
+                            hoveredLink === item.label
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          onMouseEnter={() => setHoveredLink(item.label)}
+                          onMouseLeave={() => setHoveredLink(null)}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="font-medium">{item.label}</span>
+                          {item.label === 'Categories' && (
+                            <ChevronDown className="h-4 w-4 ml-auto" />
+                          )}
+                        </Link>
+                      </motion.div>
+                    )
+                  })}
+                </nav>
+
+                {/* Auth Buttons */}
+                <div className="p-4 border-t border-slate-100 space-y-3">
                   <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full gap-2 border-2 border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all">
+                    <Button variant="outline" className="w-full gap-2 rounded-full border-slate-200 text-slate-700 hover:bg-slate-50">
                       <LogIn className="h-4 w-4" />
                       Login
                     </Button>
                   </Link>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
                   <Link href="/auth/register" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full gap-2 bg-gradient-to-r from-blue-700 via-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 transition-all">
+                    <Button className="w-full gap-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                       <UserPlus className="h-4 w-4" />
                       Register
                     </Button>
                   </Link>
-                </motion.div>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
-    </motion.header>
+    </>
   )
 }
 
@@ -399,25 +295,15 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`text-sm font-medium transition-colors relative group ${
+      className={`text-sm font-medium transition-colors relative ${
         hoveredLink === label ? 'text-blue-600' : 'text-slate-700 hover:text-blue-600'
       }`}
       onMouseEnter={() => setHoveredLink(label)}
       onMouseLeave={() => setHoveredLink(null)}
     >
-      <motion.span
-        whileHover={{ y: -1 }}
-        transition={{ type: "spring", stiffness: 400 }}
-      >
-        {label}
-      </motion.span>
+      {label}
       {hoveredLink === label && (
-        <motion.span
-          layoutId="navbar-underline"
-          className="absolute -bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"
-          initial={false}
-          transition={{ type: "spring", stiffness: 380, damping: 30 }}
-        />
+        <span className="absolute -bottom-8 left-0 right-0 h-[2px] bg-blue-600" />
       )}
     </Link>
   )

@@ -73,11 +73,13 @@ export function WebsiteFooter() {
           >
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="inline-block"
+              className="inline-block mb-4"
             >
-              <h3 className="text-3xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-transparent mb-4" style={{ fontFamily: 'var(--font-poppins)' }}>
-                Feenix Repair
-              </h3>
+              <img 
+                src="/images/feenix-repair-logo.png" 
+                alt="Feenix Repair" 
+                className="h-16 w-auto object-contain"
+              />
             </motion.div>
             <p className="text-slate-300 leading-relaxed max-w-sm">
               India's largest B2B marketplace for mobile spare parts. Connecting verified dealers across the country for seamless trading.

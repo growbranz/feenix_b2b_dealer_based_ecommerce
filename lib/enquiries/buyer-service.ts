@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache"
 import { createServerClient } from "@/lib/supabase/server"
 import { getCurrentUserProfile } from "@/lib/auth/auth.helpers"
+import type {
+  DealerEnquiryDetail,
+  DealerEnquiryFilters,
+  DealerEnquiryListItem,
+  DealerEnquiryTimelineEvent,
+  PaginatedEnquiries,
+} from "@/types/enquiries"
 
 export interface CreateEnquiryInput {
   product_id: string
@@ -14,6 +21,157 @@ export interface CreateEnquiryResult {
   success: boolean
   error?: string
   enquiryId?: string
+}
+
+const BUYER_ENQUIRY_SELECT = `
+  id,
+  quantity,
+  remarks,
+  status,
+  priority,
+  order_id,
+  created_at,
+  updated_at,
+  seller:profiles!enquiries_seller_id_fkey(id, name, business_name, email, phone, city, state, address),
+  product:products(id, title, sku, price, category:categories(name), brand:brands(name), model:models(name), images),
+  order:orders(id, order_number, status, payment_status)
+`
+
+function mapBuyerListItem(row: any): DealerEnquiryListItem {
+  const product = row.product || {}
+  const images = product.images || []
+  const primaryImage = Array.isArray(images) ? images[0] : null
+  
+  return {
+    id: row.id,
+    buyer: {
+      id: "", // Not needed for buyer view
+      name: "",
+      business_name: null,
+      email: "",
+      phone: null,
+      city: null,
+      state: null,
+      address: null,
+    },
+    product: {
+      id: product.id || "",
+      title: product.title || "Unknown product",
+      sku: product.sku || null,
+      price: Number(product.price || 0),
+      category: product.category?.name || null,
+      brand: product.brand?.name || null,
+      model: product.model?.name || null,
+    },
+    quantity: row.quantity,
+    remarks: row.remarks,
+    status: row.status,
+    priority: row.priority,
+    assigned_by: null,
+    order: row.order ? { id: row.order.id, order_number: row.order.order_number, status: row.order.status } : null,
+    created_at: row.created_at,
+    updated_at: row.updated_at || row.created_at,
+  }
+}
+
+function mapBuyerTimeline(rows: any[]): DealerEnquiryTimelineEvent[] {
+  return (rows || []).map((t: any) => ({
+    id: t.id,
+    status: t.status,
+    actor: t.actor?.name || (t.actor_id ? "System" : "System"),
+    note: t.note,
+    timestamp: t.created_at,
+  }))
+}
+
+/**
+ * Enquiries created by the currently authenticated dealer (as buyer).
+ * Relies on the `enquiries_select_parties` RLS policy
+ * (buyer_id = auth.uid() OR seller_id = auth.uid() OR is_admin())
+ */
+export async function getBuyerEnquiries(
+  buyerId: string,
+  filters: DealerEnquiryFilters = {}
+): Promise<PaginatedEnquiries<DealerEnquiryListItem>> {
+  const { search, status, priority, page = 1, limit = 10 } = filters
+  const supabase: any = await createServerClient()
+
+  let query = supabase
+    .from("enquiries")
+    .select(BUYER_ENQUIRY_SELECT)
+    .eq("buyer_id", buyerId)
+    .order("created_at", { ascending: false })
+
+  if (status && status !== "all") {
+    query = query.eq("status", status)
+  }
+  if (priority && priority !== "all") {
+    query = query.eq("priority", priority)
+  }
+
+  const { data, error } = await query
+  if (error) {
+    console.error("getBuyerEnquiries error:", error)
+    return { data: [], count: 0, page, limit, totalPages: 0 }
+  }
+
+  let mapped: DealerEnquiryListItem[] = (data || []).map(mapBuyerListItem)
+
+  if (search?.trim()) {
+    const q = search.trim().toLowerCase()
+    mapped = mapped.filter(
+      (e) =>
+        e.product.title.toLowerCase().includes(q) ||
+        (data.find((d: any) => d.id === e.id)?.seller?.business_name || "").toLowerCase().includes(q)
+    )
+  }
+
+  const count = mapped.length
+  const totalPages = Math.max(1, Math.ceil(count / limit))
+  const currentPage = Math.min(Math.max(1, page), totalPages)
+  const paged = mapped.slice((currentPage - 1) * limit, currentPage * limit)
+
+  return { data: paged, count, page: currentPage, limit, totalPages }
+}
+
+export async function getBuyerEnquiryDetail(
+  buyerId: string,
+  enquiryId: string
+): Promise<DealerEnquiryDetail | null> {
+  const supabase: any = await createServerClient()
+
+  const { data: row, error } = await supabase
+    .from("enquiries")
+    .select(BUYER_ENQUIRY_SELECT)
+    .eq("id", enquiryId)
+    .eq("buyer_id", buyerId)
+    .single()
+
+  if (error || !row) {
+    if (error && error.code !== "PGRST116") console.error("getBuyerEnquiryDetail error:", error)
+    return null
+  }
+
+  const { data: historyRows, error: historyError } = await supabase
+    .from("enquiry_status_history")
+    .select("id, status, note, created_at, actor_id, actor:profiles(name)")
+    .eq("enquiry_id", enquiryId)
+    .order("created_at", { ascending: true })
+
+  if (historyError) console.error("getBuyerEnquiryDetail history error:", historyError)
+
+  // Get quotation messages from conversations
+  const { data: quotationMessages } = await supabase
+    .from("messages")
+    .select("id, content, metadata, created_at, sender_id")
+    .eq("message_type", "quotation")
+    .order("created_at", { ascending: false })
+    .limit(1)
+
+  return {
+    ...mapBuyerListItem(row),
+    timeline: mapBuyerTimeline(historyRows || []),
+  }
 }
 
 /**

@@ -68,12 +68,13 @@ export function AuthHero({ children }: { children: ReactNode }) {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex items-center gap-2 text-2xl font-extrabold tracking-tight"
+          className="flex items-center"
         >
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-sky-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <Zap className="h-5 w-5 text-white" />
-          </div>
-          Feenix Repair
+          <img 
+            src="/images/feenix-repair-logo.png" 
+            alt="Feenix Repair" 
+            className="h-12 w-auto object-contain"
+          />
         </motion.div>
       </div>
 

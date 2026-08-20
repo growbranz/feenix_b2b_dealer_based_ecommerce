@@ -30,7 +30,11 @@ export function Sidebar({ items, collapsed = false, onToggle, className }: Sideb
     >
       <div className="flex h-16 items-center justify-between border-b px-4">
         {!collapsed && (
-          <span className="text-lg font-semibold">Feenix Repair</span>
+          <img 
+            src="/images/feenix-repair-logo.png" 
+            alt="Feenix Repair" 
+            className="h-8 w-auto object-contain"
+          />
         )}
         <Button
           variant="ghost"

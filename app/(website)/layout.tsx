@@ -24,7 +24,7 @@ export default function WebsiteLayout({
   return (
     <div className={`${inter.variable} ${poppins.variable} min-h-screen flex flex-col font-sans`}>
       <WebsiteNavbar />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pt-24 md:pt-28">{children}</main>
       <WebsiteFooter />
     </div>
   )

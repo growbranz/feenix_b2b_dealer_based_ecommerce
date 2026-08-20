@@ -88,23 +88,36 @@ export function AdminSidebar({
   const sidebarContent = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center justify-between border-b border-slate-800 px-4">
-        <AnimatePresence mode="wait">
-          {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: "auto" }}
-              exit={{ opacity: 0, width: 0 }}
-              className="overflow-hidden"
-            >
-              <Link
-                href="/admin"
-                className="whitespace-nowrap text-lg font-bold tracking-tight text-white"
-              >
-                Feenix Admin
-              </Link>
-            </motion.div>
+        <Link href="/admin" className="flex items-center">
+          <img 
+            src="/images/feenix-repair-logo.png" 
+            alt="Feenix Repair" 
+            className="h-8 w-auto object-contain"
+          />
+        </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          className="hidden text-slate-400 transition-colors hover:bg-slate-800 hover:text-white md:flex"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
           )}
-        </AnimatePresence>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onMobileClose}
+          className="text-slate-400 transition-colors hover:bg-slate-800 hover:text-white md:hidden"
+          aria-label="Close sidebar"
+        >
+          <X className="h-5 w-5" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"

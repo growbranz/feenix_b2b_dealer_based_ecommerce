@@ -24,6 +24,7 @@ import {
   MessageSquare,
   History,
   CreditCard,
+  Inbox,
 } from "lucide-react"
 
 const navItems: DealerSidebarItem[] = [
@@ -33,6 +34,7 @@ const navItems: DealerSidebarItem[] = [
   { title: "Inventory History", href: "/dealer/inventory/history", icon: History },
   { title: "Payments", href: ROUTES.DEALER_PAYMENTS, icon: CreditCard },
   { title: "Enquiries", href: "/dealer/enquiries", icon: MessageSquare },
+  { title: "My Enquiries", href: "/dealer/my-enquiries", icon: Inbox },
   { title: "Add Product", href: ROUTES.DEALER_ADD_PRODUCT, icon: PackagePlus },
   { title: "Orders", href: "/dealer/orders", icon: ShoppingCart },
   { title: "Profile", href: ROUTES.DEALER_PROFILE, icon: User },
@@ -77,11 +79,12 @@ export function DealerSidebar({
               exit={{ opacity: 0, width: 0 }}
               className="overflow-hidden"
             >
-              <Link
-                href={ROUTES.DEALER_DASHBOARD}
-                className="text-lg font-bold tracking-tight text-white whitespace-nowrap"
-              >
-                Feenix Repair
+              <Link href={ROUTES.DEALER_DASHBOARD} className="flex items-center">
+                <img 
+                  src="/images/feenix-repair-logo.png" 
+                  alt="Feenix Repair" 
+                  className="h-8 w-auto object-contain"
+                />
               </Link>
             </motion.div>
           )}
