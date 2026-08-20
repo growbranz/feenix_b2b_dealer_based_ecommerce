@@ -28,13 +28,15 @@ export function Sidebar({ items, collapsed = false, onToggle, className }: Sideb
         className
       )}
     >
-      <div className="flex h-16 items-center justify-between border-b px-4">
+      <div className="flex h-20 items-center justify-between border-b px-4 bg-gradient-to-r from-slate-100 to-slate-50">
         {!collapsed && (
-          <img 
-            src="/images/feenix-repair-logo.png" 
-            alt="Feenix Repair" 
-            className="h-8 w-auto object-contain"
-          />
+          <div className="rounded-lg bg-white p-1.5 shadow-sm">
+            <img 
+              src="/images/feenix-repair-logo.png" 
+              alt="Feenix Repair" 
+              className="h-9 w-auto max-w-[180px] object-contain"
+            />
+          </div>
         )}
         <Button
           variant="ghost"

@@ -70,11 +70,13 @@ export function AuthHero({ children }: { children: ReactNode }) {
           transition={{ duration: 0.6 }}
           className="flex items-center"
         >
-          <img 
-            src="/images/feenix-repair-logo.png" 
-            alt="Feenix Repair" 
-            className="h-12 w-auto object-contain"
-          />
+          <div className="inline-flex rounded-2xl bg-white p-3 shadow-xl">
+            <img 
+              src="/images/feenix-repair-logo.png" 
+              alt="Feenix Repair" 
+              className="h-12 w-auto max-w-[180px] object-contain"
+            />
+          </div>
         </motion.div>
       </div>
 

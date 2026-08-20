@@ -70,7 +70,7 @@ export function DealerSidebar({
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center justify-between border-b border-slate-800 px-4">
+      <div className="flex h-[88px] items-center justify-between border-b border-slate-800/60 px-5 bg-gradient-to-r from-slate-950 to-slate-900">
         <AnimatePresence mode="wait">
           {!collapsed && (
             <motion.div
@@ -80,11 +80,13 @@ export function DealerSidebar({
               className="overflow-hidden"
             >
               <Link href={ROUTES.DEALER_DASHBOARD} className="flex items-center">
-                <img 
-                  src="/images/feenix-repair-logo.png" 
-                  alt="Feenix Repair" 
-                  className="h-8 w-auto object-contain"
-                />
+                <div className="rounded-xl bg-slate-50 p-1.5 shadow-md">
+                  <img 
+                    src="/images/feenix-repair-logo.png" 
+                    alt="Feenix Repair" 
+                    className="h-11 w-auto max-w-[170px] object-contain"
+                  />
+                </div>
               </Link>
             </motion.div>
           )}
@@ -114,7 +116,7 @@ export function DealerSidebar({
         </Button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-3" aria-label="Dealer sidebar">
+      <nav className="flex-1 overflow-y-auto p-3 pt-5" aria-label="Dealer sidebar">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon

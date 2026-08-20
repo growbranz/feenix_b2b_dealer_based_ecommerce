@@ -87,37 +87,27 @@ export function AdminSidebar({
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center justify-between border-b border-slate-800 px-4">
-        <Link href="/admin" className="flex items-center">
-          <img 
-            src="/images/feenix-repair-logo.png" 
-            alt="Feenix Repair" 
-            className="h-8 w-auto object-contain"
-          />
-        </Link>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className="hidden text-slate-400 transition-colors hover:bg-slate-800 hover:text-white md:flex"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-expanded={!collapsed}
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
+      <div className="flex h-[88px] items-center justify-between border-b border-slate-800/60 px-5 bg-gradient-to-r from-slate-950 to-slate-900">
+        <AnimatePresence mode="wait">
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: "auto" }}
+              exit={{ opacity: 0, width: 0 }}
+              className="overflow-hidden"
+            >
+              <Link href="/admin" className="flex items-center">
+                <div className="rounded-xl bg-slate-50 p-1.5 shadow-md">
+                  <img 
+                    src="/images/feenix-repair-logo.png" 
+                    alt="Feenix Repair" 
+                    className="h-11 w-auto max-w-[170px] object-contain"
+                  />
+                </div>
+              </Link>
+            </motion.div>
           )}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onMobileClose}
-          className="text-slate-400 transition-colors hover:bg-slate-800 hover:text-white md:hidden"
-          aria-label="Close sidebar"
-        >
-          <X className="h-5 w-5" />
-        </Button>
+        </AnimatePresence>
         <Button
           variant="ghost"
           size="icon"
@@ -143,7 +133,7 @@ export function AdminSidebar({
         </Button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-3" aria-label="Admin sidebar">
+      <nav className="flex-1 overflow-y-auto p-3 pt-5" aria-label="Admin sidebar">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon

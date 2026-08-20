@@ -34,7 +34,7 @@ export function WebsiteFooter() {
   return (
     <footer 
       ref={footerRef}
-      className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white relative overflow-hidden"
+      className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white relative overflow-hidden"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
@@ -48,18 +48,18 @@ export function WebsiteFooter() {
       <motion.div 
         animate={{ 
           scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3]
+          opacity: [0.2, 0.4, 0.2]
         }}
         transition={{ duration: 8, repeat: Infinity }}
-        className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full blur-3xl"
+        className="absolute -top-40 -right-40 w-80 h-80 bg-blue-600 rounded-full blur-3xl"
       />
       <motion.div 
         animate={{ 
           scale: [1, 1.1, 1],
-          opacity: [0.2, 0.4, 0.2]
+          opacity: [0.15, 0.3, 0.15]
         }}
         transition={{ duration: 10, repeat: Infinity, delay: 2 }}
-        className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-500 rounded-full blur-3xl"
+        className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-600 rounded-full blur-3xl"
       />
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-16">
@@ -71,17 +71,14 @@ export function WebsiteFooter() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="space-y-6"
           >
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="inline-block mb-4"
-            >
+            <div className="inline-flex items-center justify-center rounded-2xl bg-slate-50 p-4 mb-6 border border-slate-200 shadow-lg">
               <img 
                 src="/images/feenix-repair-logo.png" 
                 alt="Feenix Repair" 
-                className="h-16 w-auto object-contain"
+                className="h-16 md:h-20 w-auto max-w-[240px] object-contain"
               />
-            </motion.div>
-            <p className="text-slate-300 leading-relaxed max-w-sm">
+            </div>
+            <p className="text-slate-200 leading-relaxed max-w-sm">
               India's largest B2B marketplace for mobile spare parts. Connecting verified dealers across the country for seamless trading.
             </p>
 
@@ -333,7 +330,7 @@ export function WebsiteFooter() {
 
             {/* Payment Methods */}
             <div className="flex items-center gap-4">
-              <span className="text-slate-500 text-sm hidden sm:block">Payment Methods:</span>
+              <span className="text-slate-400 text-sm hidden sm:block">Payment Methods:</span>
               <div className="flex gap-3">
                 {[
                   { icon: CreditCard, label: 'VISA' },

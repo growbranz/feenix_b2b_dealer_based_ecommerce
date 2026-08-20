@@ -41,11 +41,11 @@ export function WebsiteNavbar() {
         <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg border border-slate-100">
           <div className="flex items-center justify-between px-6 py-4">
             {/* Logo */}
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center rounded-xl bg-white p-1.5 shadow-sm border border-slate-100">
               <img 
                 src="/images/feenix-repair-logo.png" 
                 alt="Feenix Repair" 
-                className="h-10 w-auto object-contain"
+                className="h-11 w-auto max-w-[180px] object-contain"
               />
             </Link>
 
@@ -148,11 +148,11 @@ export function WebsiteNavbar() {
         <div className="bg-white rounded-2xl shadow-lg border border-slate-100">
           <div className="flex items-center justify-between px-4 py-3">
             {/* Logo */}
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center rounded-xl bg-white p-1.5 shadow-sm border border-slate-100">
               <img 
                 src="/images/feenix-repair-logo.png" 
                 alt="Feenix Repair" 
-                className="h-8 w-auto object-contain"
+                className="h-9 w-auto max-w-[150px] object-contain"
               />
             </Link>
 
@@ -208,11 +208,11 @@ export function WebsiteNavbar() {
               <div className="flex flex-col h-full">
                 {/* Sidebar Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                  <Link href="/" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/" className="flex items-center rounded-xl bg-white p-1.5 shadow-sm border border-slate-100" onClick={() => setMobileMenuOpen(false)}>
                     <img 
                       src="/images/feenix-repair-logo.png" 
                       alt="Feenix Repair" 
-                      className="h-8 w-auto object-contain"
+                      className="h-9 w-auto max-w-[150px] object-contain"
                     />
                   </Link>
                   <button
