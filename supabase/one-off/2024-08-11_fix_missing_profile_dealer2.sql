@@ -14,7 +14,6 @@
 -- This script does NOT enable that trigger and does NOT touch the
 -- registration flow - it only backfills this one profile.
 -- ============================================================================
-
 INSERT INTO public.profiles (
   id,
   role,

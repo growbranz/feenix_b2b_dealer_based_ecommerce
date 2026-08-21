@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { BuyerEnquiryDetail } from "@/components/dealer/enquiries/buyer-enquiry-detail"
 import { getCurrentUserProfile } from "@/lib/auth/auth.helpers"
 import { getBuyerEnquiryDetail } from "@/lib/enquiries/buyer-service"
@@ -9,15 +9,34 @@ export default async function BuyerEnquiryDetailPage({ params }: { params: Promi
   const userProfile = await getCurrentUserProfile()
   if (!userProfile?.profile?.id) redirect("/auth/login")
 
-  const enquiry = await getBuyerEnquiryDetail(userProfile.profile.id, id)
+  const buyerId = userProfile.profile.id
+  const enquiry = await getBuyerEnquiryDetail(buyerId, id)
+
+  if (!enquiry) {
+    console.error("Buyer enquiry detail not found or not owned", {
+      enquiryId: id,
+      buyerId,
+    })
+    notFound()
+  }
 
   // Fetch seller information
   const supabase: any = await createServerClient()
-  const { data: enquiryData } = await supabase
+  const { data: enquiryData, error: sellerError } = await supabase
     .from("enquiries")
-    .select("seller:profiles!enquiries_seller_id_fkey(id, name, business_name, email, phone)")
+    .select("seller:profiles!seller_id(id, name, business_name, email, phone)")
     .eq("id", id)
     .single()
+
+  if (sellerError) {
+    console.error("Buyer enquiry detail seller query error:", {
+      enquiryId: id,
+      code: sellerError?.code,
+      message: sellerError?.message,
+      details: sellerError?.details,
+      hint: sellerError?.hint,
+    })
+  }
 
   const sellerName = enquiryData?.seller?.name || "Unknown"
   const sellerBusinessName = enquiryData?.seller?.business_name || null

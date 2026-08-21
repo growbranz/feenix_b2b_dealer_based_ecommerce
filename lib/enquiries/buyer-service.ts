@@ -32,9 +32,9 @@ const BUYER_ENQUIRY_SELECT = `
   order_id,
   created_at,
   updated_at,
-  seller:profiles!enquiries_seller_id_fkey(id, name, business_name, email, phone, city, state, address),
-  product:products(id, title, sku, price, category:categories(name), brand:brands(name), model:models(name)),
-  order:orders(id, order_number, status, payment_status)
+  seller:profiles!seller_id(id, name, business_name, email, phone, city, state, address),
+  product:products!product_id(id, title, sku, price, category:categories!category_id(name), brand:brands!brand_id(name), model:models!model_id(name)),
+  order:orders!order_id(id, order_number, status, payment_status)
 `
 
 function mapBuyerListItem(row: any): DealerEnquiryListItem {
@@ -156,10 +156,21 @@ export async function getBuyerEnquiryDetail(
     .eq("buyer_id", buyerId)
     .single()
 
-  if (error || !row) {
-    if (error && error.code !== "PGRST116") console.error("getBuyerEnquiryDetail error:", error)
-    return null
+  if (error) {
+    console.error("getBuyerEnquiryDetail Supabase error", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      enquiryId,
+      userId: buyerId,
+    })
+    if (error.code === "PGRST116") return null
+    throw new Error(
+      `getBuyerEnquiryDetail failed: ${error.message} | code: ${error.code} | details: ${error.details ?? "none"} | hint: ${error.hint ?? "none"}`
+    )
   }
+  if (!row) return null
 
   const { data: historyRows, error: historyError } = await supabase
     .from("enquiry_status_history")

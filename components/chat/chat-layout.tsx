@@ -108,23 +108,9 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
     }
   }
 
-  async function handleSelect(id: string) {
-    setSelectedId(id)
-    router.replace(`/${mode}/messages?conversation=${id}`)
+  function handleSelect(id: string) {
     setTypingUsers([])
-    await loadMessages(id)
-    try {
-      await markConversationRead(id)
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === id
-            ? { ...c, my_unread: 0, participants: c.participants?.map((p: any) => (p.user_id === currentUser.id ? { ...p, unread_count: 0 } : p)) }
-            : c
-        )
-      )
-    } catch (e) {
-      console.warn("Failed to mark read", e)
-    }
+    router.replace(`/${mode}/messages?conversation=${id}`)
   }
 
   async function handleSend(text: string) {
@@ -172,7 +158,6 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
   async function handleArchive(id: string, archived: boolean) {
     await archiveConversation(id, archived)
     if (archived && selectedId === id) {
-      setSelectedId(null)
       router.replace(`/${mode}/messages`)
     }
     loadConversations()
@@ -241,6 +226,11 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
     onStop: (u: any) => removeTypingUser(u),
   })
 
+  const selectedConversation = React.useMemo(
+    () => conversations.find((c) => c.id === selectedId) || null,
+    [conversations, selectedId]
+  )
+
   const otherUserIds = React.useMemo(() => {
     const ids = new Set<string>()
     for (const c of conversations) {
@@ -254,7 +244,7 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
       }
     }
     return Array.from(ids)
-  }, [conversations, selectedId])
+  }, [conversations, selectedId, selectedConversation])
 
   useUserPresence(otherUserIds, {
     onChange: (p: any) => {
@@ -280,19 +270,33 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
   }, [search, activeTab])
 
   React.useEffect(() => {
-    if (paramConv && paramConv !== selectedId) {
-      setSelectedId(paramConv)
-      loadMessages(paramConv)
-      try {
-        markConversationRead(paramConv)
-      } catch {}
-    }
+    setSelectedId(paramConv)
   }, [paramConv])
 
-  const selectedConversation = React.useMemo(
-    () => conversations.find((c) => c.id === selectedId) || null,
-    [conversations, selectedId]
-  )
+  React.useEffect(() => {
+    if (!selectedId) {
+      setMessages([])
+      setTypingUsers([])
+      return
+    }
+    ;(async () => {
+      try {
+        await loadMessages(selectedId)
+        await markConversationRead(selectedId)
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === selectedId
+              ? { ...c, my_unread: 0, participants: c.participants?.map((p: any) => (p.user_id === currentUser.id ? { ...p, unread_count: 0 } : p)) }
+              : c
+          )
+        )
+      } catch (e) {
+        console.warn("Failed to open conversation", e)
+        setSelectedId(null)
+        router.replace(`/${mode}/messages`)
+      }
+    })()
+  }, [selectedId])
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-900">

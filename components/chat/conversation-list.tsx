@@ -95,9 +95,18 @@ export function ConversationList({
 
               return (
                 <li key={c.id}>
-                  <button
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onSelect(c.id)}
-                    className={`flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors ${
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        onSelect(c.id)
+                      }
+                    }}
+                    aria-current={isSelected ? "true" : undefined}
+                    className={`flex w-full cursor-pointer items-center gap-3 rounded-lg p-3 text-left transition-colors ${
                       isSelected ? "bg-orange-50 text-orange-900 dark:bg-orange-900/20" : "hover:bg-slate-100 dark:hover:bg-slate-800"
                     }`}
                   >
@@ -147,7 +156,7 @@ export function ConversationList({
                         </button>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 </li>
               )
             })}
