@@ -194,57 +194,117 @@ export async function updateDealerEnquiryStatus(enquiryId: string, newStatus: "A
  * DB trigger for inventory reservation - no new stock logic is added here.
  */
 export async function createOrderFromEnquiry(enquiryId: string) {
+  console.log("CREATE ORDER START", { enquiryId })
+
   const userProfile = await getCurrentUserProfile()
+  console.log("AUTHENTICATED USER", {
+    userId: userProfile?.user?.id,
+    profileId: userProfile?.profile?.id,
+    profileName: userProfile?.profile?.name,
+  })
   if (!userProfile?.profile?.id) throw new Error("Unauthorized")
 
   const enquiry = await assertDealerOwnsEnquiry(enquiryId, userProfile.profile.id)
+  console.log("ENQUIRY DATA", {
+    id: enquiry.id,
+    buyer_id: enquiry.buyer_id,
+    seller_id: enquiry.seller_id,
+    product_id: enquiry.product_id,
+    quantity: enquiry.quantity,
+    status: enquiry.status,
+    order_id: enquiry.order_id,
+  })
+
   if (enquiry.status !== "ACCEPTED") throw new Error("Enquiry must be accepted before creating an order")
   if (enquiry.order_id) throw new Error("This enquiry already has an order")
 
   const supabase: any = await createServerClient()
+  console.log("Fetching product for:", enquiry.product_id)
+
   const { data: product, error: productError } = await supabase
     .from("products")
     .select("id, price")
     .eq("id", enquiry.product_id)
     .single()
-  if (productError || !product) throw new Error("Product not found")
+  if (productError || !product) {
+    console.error("CREATE ORDER SUPABASE ERROR - PRODUCT FETCH", {
+      code: productError?.code,
+      message: productError?.message,
+      details: productError?.details,
+      hint: productError?.hint,
+      fullError: productError,
+    })
+    throw new Error(`Product not found: ${productError?.message || productError?.details || productError?.hint || 'Unknown error'}`)
+  }
+
+  console.log("PRODUCT DATA", { id: product.id, price: product.price })
 
   const price = Number(product.price || 0)
   const subtotal = price * enquiry.quantity
   const tax = 0
   const total = subtotal + tax
 
+  const orderNumber = generateOrderNumber()
+  const orderPayload = {
+    order_number: orderNumber,
+    buyer_id: enquiry.buyer_id,
+    seller_id: enquiry.seller_id,
+    product_id: enquiry.product_id,
+    quantity: enquiry.quantity,
+    price,
+    subtotal,
+    tax,
+    discount: 0,
+    shipping_charges: 0,
+    total,
+    status: "PENDING",
+    payment_status: "PENDING",
+  }
+
+  console.log("ORDER INSERT PAYLOAD", orderPayload)
+
   const { data: order, error: orderError } = await supabase
     .from("orders")
-    .insert({
-      order_number: generateOrderNumber(),
-      buyer_id: enquiry.buyer_id,
-      seller_id: enquiry.seller_id,
-      product_id: enquiry.product_id,
-      quantity: enquiry.quantity,
-      price,
-      subtotal,
-      tax,
-      discount: 0,
-      shipping_charges: 0,
-      total,
-      status: "PENDING",
-      payment_status: "PENDING",
-    })
+    .insert(orderPayload)
     .select("id, order_number, status")
     .single()
 
-  if (orderError || !order) throw orderError || new Error("Failed to create order")
+  if (orderError || !order) {
+    console.error("CREATE ORDER SUPABASE ERROR - ORDER INSERT", {
+      code: orderError?.code,
+      message: orderError?.message,
+      details: orderError?.details,
+      hint: orderError?.hint,
+      fullError: orderError,
+    })
+    throw new Error(`Failed to create order: ${orderError?.message || orderError?.details || orderError?.hint || 'Unknown error'}`)
+  }
 
+  console.log("ORDER CREATED SUCCESSFULLY", { id: order.id, order_number: order.order_number, status: order.status })
+
+  console.log("Updating enquiry with order_id and status")
   const { error: linkError } = await supabase
     .from("enquiries")
     .update({ order_id: order.id, status: "COMPLETED" })
     .eq("id", enquiryId)
-  if (linkError) throw linkError
+
+  if (linkError) {
+    console.error("CREATE ORDER SUPABASE ERROR - ENQUIRY UPDATE", {
+      code: linkError?.code,
+      message: linkError?.message,
+      details: linkError?.details,
+      hint: linkError?.hint,
+      fullError: linkError,
+    })
+    throw new Error(`Failed to link order to enquiry: ${linkError?.message || linkError?.details || linkError?.hint || 'Unknown error'}`)
+  }
+
+  console.log("ENQUIRY UPDATED SUCCESSFULLY")
 
   revalidatePath(`/dealer/enquiries/${enquiryId}`)
   revalidatePath("/dealer/enquiries")
   revalidatePath("/dealer/orders")
+  console.log("CREATE ORDER COMPLETE", { orderId: order.id, orderNumber: order.order_number })
   return { success: true, order }
 }
 
