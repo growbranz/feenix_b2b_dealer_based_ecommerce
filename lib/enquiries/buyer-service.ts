@@ -169,16 +169,32 @@ export async function getBuyerEnquiryDetail(
 
   if (historyError) console.error("getBuyerEnquiryDetail history error:", historyError)
 
-  // Get quotation messages from conversations
-  const { data: quotationMessages } = await supabase
-    .from("messages")
-    .select("id, content, metadata, created_at, sender_id")
-    .eq("message_type", "quotation")
-    .order("created_at", { ascending: false })
-    .limit(1)
+  // Find the conversation attached to this enquiry
+  const { data: conversation } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("context_type", "enquiry")
+    .eq("context_id", enquiryId)
+    .maybeSingle()
+
+  // Fetch the latest quotation message from that conversation only
+  let latestQuotation: any = null
+  if (conversation?.id) {
+    const { data: quotationMessages } = await supabase
+      .from("messages")
+      .select("id, content, metadata, created_at, sender_id")
+      .eq("conversation_id", conversation.id)
+      .eq("message_type", "quotation")
+      .order("created_at", { ascending: false })
+      .limit(1)
+
+    latestQuotation = quotationMessages?.[0] || null
+  }
 
   return {
     ...mapBuyerListItem(row),
+    conversationId: conversation?.id || null,
+    latestQuotation,
     timeline: mapBuyerTimeline(historyRows || []),
   }
 }
@@ -291,4 +307,98 @@ export async function createEnquiry(input: CreateEnquiryInput): Promise<CreateEn
     console.error("Unexpected error in createEnquiry:", error)
     return { success: false, error: "An unexpected error occurred. Please try again." }
   }
+}
+
+async function assertBuyerOwnsEnquiry(enquiryId: string, buyerId: string) {
+  const supabase: any = await createServerClient()
+  const { data, error } = await supabase
+    .from("enquiries")
+    .select("id, buyer_id, seller_id, order_id, status")
+    .eq("id", enquiryId)
+    .eq("buyer_id", buyerId)
+    .single()
+
+  if (error || !data) throw new Error("Enquiry not found")
+  return data
+}
+
+async function getEnquiryConversation(enquiryId: string, supabase: any) {
+  const { data: conversation } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("context_type", "enquiry")
+    .eq("context_id", enquiryId)
+    .maybeSingle()
+  return conversation
+}
+
+async function getLatestQuotation(conversationId: string, supabase: any) {
+  const { data: quotationMessages } = await supabase
+    .from("messages")
+    .select("id")
+    .eq("conversation_id", conversationId)
+    .eq("message_type", "quotation")
+    .order("created_at", { ascending: false })
+    .limit(1)
+  return quotationMessages?.[0] || null
+}
+
+export async function acceptBuyerQuotation(enquiryId: string) {
+  const userProfile = await getCurrentUserProfile()
+  if (!userProfile?.profile?.id) throw new Error("Unauthorized")
+
+  const supabase: any = await createServerClient()
+  const enquiry = await assertBuyerOwnsEnquiry(enquiryId, userProfile.profile.id)
+
+  if (enquiry.order_id) throw new Error("An order already exists for this enquiry")
+  if (enquiry.status === "REJECTED") throw new Error("Cannot accept a quotation for a rejected enquiry")
+  if (enquiry.status === "COMPLETED") throw new Error("This enquiry is already completed")
+
+  const conversation = await getEnquiryConversation(enquiryId, supabase)
+  if (!conversation?.id) throw new Error("No conversation found for this enquiry")
+
+  const latestQuotation = await getLatestQuotation(conversation.id, supabase)
+  if (!latestQuotation) throw new Error("No quotation found to accept")
+
+  // Keep the enquiry in ACCEPTED state so the seller can explicitly create an order
+  const { error } = await supabase
+    .from("enquiries")
+    .update({ status: "ACCEPTED" })
+    .eq("id", enquiryId)
+    .eq("buyer_id", userProfile.profile.id)
+
+  if (error) throw error
+
+  revalidatePath(`/dealer/my-enquiries/${enquiryId}`)
+  revalidatePath("/dealer/my-enquiries")
+  return { success: true }
+}
+
+export async function rejectBuyerQuotation(enquiryId: string) {
+  const userProfile = await getCurrentUserProfile()
+  if (!userProfile?.profile?.id) throw new Error("Unauthorized")
+
+  const supabase: any = await createServerClient()
+  const enquiry = await assertBuyerOwnsEnquiry(enquiryId, userProfile.profile.id)
+
+  if (enquiry.order_id) throw new Error("An order already exists for this enquiry")
+  if (enquiry.status === "COMPLETED") throw new Error("This enquiry is already completed")
+
+  const conversation = await getEnquiryConversation(enquiryId, supabase)
+  if (!conversation?.id) throw new Error("No conversation found for this enquiry")
+
+  const latestQuotation = await getLatestQuotation(conversation.id, supabase)
+  if (!latestQuotation) throw new Error("No quotation found to reject")
+
+  const { error } = await supabase
+    .from("enquiries")
+    .update({ status: "REJECTED" })
+    .eq("id", enquiryId)
+    .eq("buyer_id", userProfile.profile.id)
+
+  if (error) throw error
+
+  revalidatePath(`/dealer/my-enquiries/${enquiryId}`)
+  revalidatePath("/dealer/my-enquiries")
+  return { success: true }
 }

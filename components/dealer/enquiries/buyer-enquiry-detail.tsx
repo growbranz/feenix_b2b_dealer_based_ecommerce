@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { EmptyState } from "@/components/shared/empty-state"
 import type { DealerEnquiryDetail as DealerEnquiryDetailType, EnquiryStatus } from "@/types/enquiries"
+import { acceptBuyerQuotation, rejectBuyerQuotation } from "@/lib/enquiries/buyer-service"
 import { currencyFormatter, dateFormatter, cn } from "@/lib/utils"
 import {
   User,
@@ -23,6 +24,7 @@ import {
   Clock,
   Inbox,
   MessageSquare,
+  FileSpreadsheet,
 } from "lucide-react"
 
 const statusStyles: Record<EnquiryStatus, string> = {
@@ -58,6 +60,10 @@ export function BuyerEnquiryDetail({
 }: BuyerEnquiryDetailProps) {
   const router = useRouter()
   const [isPending, startTransition] = React.useTransition()
+  const [isAccepting, setIsAccepting] = React.useState(false)
+  const [isRejecting, setIsRejecting] = React.useState(false)
+  const [accepted, setAccepted] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
   if (!initialEnquiry) {
     return (
@@ -76,6 +82,33 @@ export function BuyerEnquiryDetail({
     startTransition(() => {
       router.refresh()
     })
+  }
+
+  async function handleAccept() {
+    setIsAccepting(true)
+    setError(null)
+    try {
+      await acceptBuyerQuotation(enquiry.id)
+      setAccepted(true)
+      router.refresh()
+    } catch (e: any) {
+      setError(e?.message || "Failed to accept quotation")
+    } finally {
+      setIsAccepting(false)
+    }
+  }
+
+  async function handleReject() {
+    setIsRejecting(true)
+    setError(null)
+    try {
+      await rejectBuyerQuotation(enquiry.id)
+      router.refresh()
+    } catch (e: any) {
+      setError(e?.message || "Failed to reject quotation")
+    } finally {
+      setIsRejecting(false)
+    }
   }
 
   const lifecycleSteps = [
@@ -203,6 +236,32 @@ export function BuyerEnquiryDetail({
         </Card>
       </div>
 
+      {enquiry.latestQuotation && (
+        <Card className="rounded-2xl border-blue-200 bg-blue-50/30 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2 text-blue-800">
+              <FileSpreadsheet className="h-4 w-4" />
+              Quotation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-0">
+            {enquiry.latestQuotation.metadata?.price !== undefined && enquiry.latestQuotation.metadata?.price !== null && (
+              <Info label="Quoted Price" value={currencyFormatter(Number(enquiry.latestQuotation.metadata.price))} icon={Hash} />
+            )}
+            {enquiry.latestQuotation.metadata?.delivery_days !== undefined && enquiry.latestQuotation.metadata?.delivery_days !== null && (
+              <Info label="Delivery Days" value={`${enquiry.latestQuotation.metadata.delivery_days} days`} icon={Calendar} />
+            )}
+            {enquiry.latestQuotation.metadata?.warranty && (
+              <Info label="Warranty" value={enquiry.latestQuotation.metadata.warranty} icon={CheckCircle2} />
+            )}
+            {enquiry.latestQuotation.metadata?.remarks && (
+              <Info label="Remarks" value={enquiry.latestQuotation.metadata.remarks} icon={Hash} />
+            )}
+            <Info label="Quotation Sent" value={dateFormatter(enquiry.latestQuotation.created_at, "long")} icon={Calendar} />
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="rounded-2xl border-slate-200 shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -241,8 +300,8 @@ export function BuyerEnquiryDetail({
         </CardHeader>
         <CardContent className="space-y-4 pt-0">
           <div className="flex flex-wrap gap-2">
-            <Link href={`/dealer/messages?enquiry=${enquiry.id}`}>
-              <Button variant="outline" disabled={isPending}>
+            <Link href={enquiry.conversationId ? `/dealer/messages?conversation=${enquiry.conversationId}` : `/dealer/messages?enquiry=${enquiry.id}`}>
+              <Button variant="outline" disabled={isPending || !enquiry.conversationId}>
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Open Chat
               </Button>
@@ -255,6 +314,25 @@ export function BuyerEnquiryDetail({
                 </Button>
               </Link>
             )}
+            {enquiry.latestQuotation && !enquiry.order && enquiry.status === "ACCEPTED" && !accepted && (
+              <>
+                <Button onClick={handleAccept} disabled={isAccepting} className="bg-emerald-600 text-white hover:bg-emerald-700">
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  {isAccepting ? "Accepting..." : "Accept Quotation"}
+                </Button>
+                <Button onClick={handleReject} disabled={isRejecting} variant="destructive">
+                  <XCircle className="mr-2 h-4 w-4" />
+                  {isRejecting ? "Rejecting..." : "Reject Quotation"}
+                </Button>
+              </>
+            )}
+            {accepted && (
+              <Badge className="bg-emerald-100 text-emerald-700">
+                <CheckCircle2 className="mr-1 h-3 w-3" />
+                Quotation accepted
+              </Badge>
+            )}
+            {error && <p className="w-full text-sm text-red-600">{error}</p>}
           </div>
         </CardContent>
       </Card>

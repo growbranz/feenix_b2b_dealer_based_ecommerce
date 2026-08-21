@@ -52,6 +52,14 @@ export interface DealerEnquiryListItem {
 }
 
 export interface DealerEnquiryDetail extends DealerEnquiryListItem {
+  conversationId?: string | null
+  latestQuotation?: {
+    id: string
+    content: string | null
+    metadata: any
+    sender_id: string | null
+    created_at: string
+  } | null
   timeline: DealerEnquiryTimelineEvent[]
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn, currencyFormatter } from "@/lib/utils"
 import { ChatAvatar } from "./chat-avatar"
 import { FileText, Image, MapPin, ShoppingBag, Receipt, FileSpreadsheet, CreditCard, AlertTriangle } from "lucide-react"
 import { motion } from "framer-motion"
@@ -65,8 +65,14 @@ function renderMessageContent(message: any) {
             <FileSpreadsheet className="h-4 w-4" />
             <span className="font-medium">{content || "Quotation"}</span>
           </div>
-          {metadata?.amount && <p className="mt-1 text-sm">Amount: ₹{metadata.amount}</p>}
-          {metadata?.description && <p className="text-xs opacity-80">{metadata.description}</p>}
+          {metadata?.price !== undefined && metadata?.price !== null && (
+            <p className="mt-1 text-sm">Price: {currencyFormatter(Number(metadata.price))}</p>
+          )}
+          {metadata?.delivery_days !== undefined && metadata?.delivery_days !== null && (
+            <p className="text-sm">Delivery: {metadata.delivery_days} days</p>
+          )}
+          {metadata?.warranty && <p className="text-sm">Warranty: {metadata.warranty}</p>}
+          {metadata?.remarks && <p className="text-xs opacity-80">{metadata.remarks}</p>}
         </div>
       )
     case "order_link":
