@@ -1,16 +1,27 @@
 "use client"
 
-import { User } from "lucide-react"
-
 interface ChatAvatarProps {
   name?: string | null
   url?: string | null
-  size?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg" | "xl"
   isOnline?: boolean
 }
 
+const DIMENSIONS: Record<NonNullable<ChatAvatarProps["size"]>, string> = {
+  sm: "h-8 w-8 text-[11px]",
+  md: "h-10 w-10 text-xs",
+  lg: "h-12 w-12 text-sm",
+  xl: "h-14 w-14 text-base",
+}
+
+const DOT_DIMENSIONS: Record<NonNullable<ChatAvatarProps["size"]>, string> = {
+  sm: "h-2.5 w-2.5",
+  md: "h-3 w-3",
+  lg: "h-3.5 w-3.5",
+  xl: "h-4 w-4",
+}
+
 export function ChatAvatar({ name, url, size = "md", isOnline }: ChatAvatarProps) {
-  const dimensions = size === "sm" ? "h-8 w-8" : size === "lg" ? "h-14 w-14" : "h-10 w-10"
   const initials = (name || "?")
     .split(" ")
     .map((n) => n[0])
@@ -19,16 +30,18 @@ export function ChatAvatar({ name, url, size = "md", isOnline }: ChatAvatarProps
     .toUpperCase()
 
   return (
-    <div className={`relative inline-flex ${dimensions} shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600`}>
+    <div
+      className={`relative inline-flex ${DIMENSIONS[size]} shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 font-semibold text-blue-700 ring-2 ring-white`}
+    >
       {url ? (
-        <img src={url} alt={name || "User"} className="h-full w-full rounded-full object-cover" />
+        <img src={url} alt={name || "User"} className="h-full w-full object-cover" />
       ) : (
-        <span className="text-xs font-semibold">{initials}</span>
+        <span>{initials}</span>
       )}
       {isOnline !== undefined && (
         <span
-          className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${
-            isOnline ? "bg-emerald-500" : "bg-slate-400"
+          className={`absolute bottom-0 right-0 ${DOT_DIMENSIONS[size]} rounded-full border-2 border-white ${
+            isOnline ? "bg-emerald-500" : "bg-slate-300"
           }`}
         />
       )}

@@ -8,6 +8,8 @@ import { ChatWindow } from "./chat-window"
 import { StartChatButton } from "./start-chat-button"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { MessageCircle, MessageSquarePlus } from "lucide-react"
+import { cn } from "@/lib/utils"
 import {
   getConversations,
   getMessages,
@@ -45,6 +47,7 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
   const [activeTab, setActiveTab] = React.useState<"all" | "pinned" | "archived">("all")
   const [search, setSearch] = React.useState("")
   const [hasMore, setHasMore] = React.useState(true)
+  const [newChatOpen, setNewChatOpen] = React.useState(false)
 
   const typingTimeouts = React.useRef<Record<string, NodeJS.Timeout>>({})
   const latestSearch = React.useRef(search)
@@ -111,6 +114,11 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
   function handleSelect(id: string) {
     setTypingUsers([])
     router.replace(`/${mode}/messages?conversation=${id}`)
+  }
+
+  function handleBack() {
+    setTypingUsers([])
+    router.replace(`/${mode}/messages`)
   }
 
   async function handleSend(text: string) {
@@ -299,16 +307,27 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
   }, [selectedId])
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-900">
-      <div className="flex items-center justify-between border-b px-4 py-3">
+    <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
         <div>
-          <h2 className="text-lg font-semibold">Messaging</h2>
-          <p className="text-xs text-slate-500">Real-time conversations</p>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Messaging</h2>
+          <p className="text-xs text-slate-500">Stay connected with dealers and manage your enquiries</p>
         </div>
-        <StartChatButton mode={mode} currentUserId={currentUser.id} defaultRole={defaultSearchRole} />
+        <StartChatButton
+          mode={mode}
+          currentUserId={currentUser.id}
+          defaultRole={defaultSearchRole}
+          open={newChatOpen}
+          onOpenChange={setNewChatOpen}
+        />
       </div>
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-full sm:w-80 lg:w-96 border-r">
+        <div
+          className={cn(
+            "w-full flex-col border-r border-slate-100 dark:border-slate-800 md:flex md:w-[320px] lg:w-[380px]",
+            selectedId ? "hidden" : "flex"
+          )}
+        >
           <ConversationList
             currentUserId={currentUser.id}
             conversations={conversations}
@@ -321,9 +340,10 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
             activeTab={activeTab}
             onChangeTab={setActiveTab}
             onlineUserIds={onlineUserIds}
+            onStartNewChat={() => setNewChatOpen(true)}
           />
         </div>
-        <div className="hidden flex-1 sm:block">
+        <div className={cn("flex-1 flex-col md:flex", selectedId ? "flex" : "hidden")}>
           {selectedId && selectedConversation ? (
             <ChatWindow
               conversation={selectedConversation}
@@ -337,12 +357,29 @@ export function ChatLayout({ currentUser, mode, defaultSearchRole }: ChatLayoutP
               onUpload={handleUpload}
               onTyping={handleTyping}
               onReport={handleReport}
+              onBack={handleBack}
               onlineUserIds={onlineUserIds}
               presence={presence}
             />
           ) : (
-            <div className="flex h-full flex-col items-center justify-center text-slate-400">
-              <p className="text-sm">Select a conversation to start messaging</p>
+            <div className="flex h-full flex-col items-center justify-center gap-3 bg-slate-50/40 px-6 text-center dark:bg-slate-900/40">
+              <div className="rounded-full bg-blue-50 p-5 dark:bg-blue-950/40">
+                <MessageCircle className="h-10 w-10 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-slate-700 dark:text-slate-200">Select a conversation</p>
+                <p className="mt-1 max-w-xs text-sm text-slate-400">
+                  Choose a conversation from the list or start a new chat.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setNewChatOpen(true)}
+                className="mt-1 gap-1.5 rounded-full border-0 bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-md shadow-blue-500/20 hover:shadow-blue-500/35"
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                New Chat
+              </Button>
             </div>
           )}
         </div>

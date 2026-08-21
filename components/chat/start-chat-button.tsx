@@ -12,11 +12,18 @@ interface StartChatButtonProps {
   mode: "admin" | "dealer"
   currentUserId: string
   defaultRole?: "ADMIN" | "DEALER"
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function StartChatButton({ mode, currentUserId, defaultRole }: StartChatButtonProps) {
+export function StartChatButton({ mode, currentUserId, defaultRole, open: controlledOpen, onOpenChange }: StartChatButtonProps) {
   const router = useRouter()
-  const [open, setOpen] = React.useState(false)
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setOpen = (value: boolean) => {
+    if (onOpenChange) onOpenChange(value)
+    if (controlledOpen === undefined) setInternalOpen(value)
+  }
   const [query, setQuery] = React.useState("")
   const [results, setResults] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(false)
@@ -53,17 +60,25 @@ export function StartChatButton({ mode, currentUserId, defaultRole }: StartChatB
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} size="sm" variant="outline">
-        <MessageSquarePlus className="mr-2 h-4 w-4" />
+      <Button
+        onClick={() => setOpen(true)}
+        size="sm"
+        className="gap-1.5 rounded-full border-0 bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-md shadow-blue-500/20 hover:shadow-blue-500/35"
+      >
+        <MessageSquarePlus className="h-4 w-4" />
         New Chat
       </Button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Start Conversation</h3>
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Start Conversation</h3>
+              <button
+                onClick={() => setOpen(false)}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
+                aria-label="Close"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -73,8 +88,9 @@ export function StartChatButton({ mode, currentUserId, defaultRole }: StartChatB
                 placeholder="Search by name or email..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="pl-9"
+                className="rounded-lg pl-9"
                 autoFocus
+                aria-label="Search dealers by name or email"
               />
             </div>
 
@@ -86,19 +102,21 @@ export function StartChatButton({ mode, currentUserId, defaultRole }: StartChatB
                   {query.length < 2 ? "Start typing to search users" : "No users found"}
                 </p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-1">
                   {results.map((u) => (
                     <li key={u.id}>
                       <button
                         onClick={() => startChat(u.id)}
-                        className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800"
+                        className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                       >
                         <ChatAvatar name={u.name} url={u.avatar_url} size="md" />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">{u.name || "User"}</p>
+                          <p className="truncate font-medium text-slate-800 dark:text-slate-100">{u.name || "User"}</p>
                           <p className="truncate text-xs text-slate-500">{u.email}</p>
                         </div>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{u.role}</span>
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {u.role}
+                        </span>
                       </button>
                     </li>
                   ))}
