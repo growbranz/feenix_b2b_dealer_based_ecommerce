@@ -202,11 +202,42 @@ export async function getBuyerEnquiryDetail(
     latestQuotation = quotationMessages?.[0] || null
   }
 
+  // Fetch order status history if an order is linked
+  let orderHistoryRows: any[] = []
+  if (row.order_id) {
+    const { data: orderHistory, error: orderHistoryError } = await supabase
+      .from("order_status_history")
+      .select("id, status, note, created_at, actor_id, actor:profiles(name)")
+      .eq("order_id", row.order_id)
+      .order("created_at", { ascending: true })
+
+    if (orderHistoryError) {
+      console.error("getBuyerEnquiryDetail order history error:", orderHistoryError)
+    } else {
+      orderHistoryRows = orderHistory || []
+    }
+  }
+
+  // Combine enquiry and order status history into one timeline
+  const enquiryTimeline = mapBuyerTimeline(historyRows || [])
+  const orderTimeline = orderHistoryRows.map((t: any) => ({
+    id: t.id,
+    status: t.status,
+    actor: t.actor?.name || (t.actor_id ? "Seller" : "System"),
+    note: t.note,
+    timestamp: t.created_at,
+  }))
+
+  // Merge and sort by timestamp
+  const combinedTimeline = [...enquiryTimeline, ...orderTimeline].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+
   return {
     ...mapBuyerListItem(row),
     conversationId: conversation?.id || null,
     latestQuotation,
-    timeline: mapBuyerTimeline(historyRows || []),
+    timeline: combinedTimeline,
   }
 }
 

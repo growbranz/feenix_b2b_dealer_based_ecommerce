@@ -27,20 +27,38 @@ import {
   FileSpreadsheet,
 } from "lucide-react"
 
-const statusStyles: Record<EnquiryStatus, string> = {
+const statusStyles: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-700",
   ASSIGNED: "bg-violet-100 text-violet-700",
   ACCEPTED: "bg-emerald-100 text-emerald-700",
   REJECTED: "bg-rose-100 text-rose-700",
   COMPLETED: "bg-blue-100 text-blue-700",
+  // Order statuses
+  CONFIRMED: "bg-emerald-100 text-emerald-700",
+  PROCESSING: "bg-blue-100 text-blue-700",
+  PACKED: "bg-indigo-100 text-indigo-700",
+  SHIPPED: "bg-purple-100 text-purple-700",
+  DELIVERED: "bg-teal-100 text-teal-700",
+  CANCELLED: "bg-rose-100 text-rose-700",
+  RETURNED: "bg-orange-100 text-orange-700",
+  REFUNDED: "bg-slate-100 text-slate-700",
 }
 
-const statusIcons: Record<EnquiryStatus, React.ElementType> = {
+const statusIcons: Record<string, React.ElementType> = {
   PENDING: Clock,
   ASSIGNED: Clock,
   ACCEPTED: CheckCircle2,
   REJECTED: XCircle,
   COMPLETED: CheckCircle2,
+  // Order statuses
+  CONFIRMED: CheckCircle2,
+  PROCESSING: Clock,
+  PACKED: Package,
+  SHIPPED: Store,
+  DELIVERED: CheckCircle2,
+  CANCELLED: XCircle,
+  RETURNED: XCircle,
+  REFUNDED: XCircle,
 }
 
 interface BuyerEnquiryDetailProps {
@@ -144,15 +162,8 @@ export function BuyerEnquiryDetail({
       </Button>
 
       {enquiry.order && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          <span>
-            This enquiry was converted to order <span className="font-semibold">{enquiry.order.order_number}</span>
-          </span>
-          <Link href={`/dealer/orders/${enquiry.order.id}`}>
-            <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-800 hover:bg-emerald-100">
-              View Order
-            </Button>
-          </Link>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          This enquiry was converted to order <span className="font-semibold">{enquiry.order.order_number}</span>
         </div>
       )}
 
@@ -306,14 +317,6 @@ export function BuyerEnquiryDetail({
                 Open Chat
               </Button>
             </Link>
-            {enquiry.order && (
-              <Link href={`/dealer/orders/${enquiry.order.id}`}>
-                <Button variant="outline" disabled={isPending}>
-                  <ShoppingBag className="mr-2 h-4 w-4" />
-                  View Order
-                </Button>
-              </Link>
-            )}
             {enquiry.latestQuotation && !enquiry.order && enquiry.status === "ACCEPTED" && !accepted && (
               <>
                 <Button onClick={handleAccept} disabled={isAccepting} className="bg-emerald-600 text-white hover:bg-emerald-700">

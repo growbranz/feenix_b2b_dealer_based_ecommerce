@@ -69,32 +69,30 @@ export function DealerSidebar({
   }
 
   const sidebarContent = (
-    <div className="flex h-full flex-col">
-      <div className="flex h-[88px] items-center justify-between border-b border-slate-800/60 px-5 bg-gradient-to-r from-slate-950 to-slate-900">
-        <AnimatePresence mode="wait">
-          {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: "auto" }}
-              exit={{ opacity: 0, width: 0 }}
-              className="overflow-hidden"
-            >
-              <Link href={ROUTES.DEALER_DASHBOARD} className="flex items-center">
-                <div className="rounded-xl bg-slate-50 p-1.5 shadow-md">
-                  <img 
-                    src="/images/feenix-repair-logo.png" 
-                    alt="Feenix Repair" 
-                    className="h-11 w-auto max-w-[170px] object-contain"
-                  />
-                </div>
-              </Link>
-            </motion.div>
-          )}
-        </AnimatePresence>
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <div className={cn(
+        "flex shrink-0 items-center border-b border-slate-800/60 bg-gradient-to-r from-slate-950 to-slate-900",
+        collapsed ? "h-[88px] justify-center px-3" : "h-[88px] justify-between px-5"
+      )}>
+        <Link href={ROUTES.DEALER_DASHBOARD} className="flex items-center">
+          <div className="rounded-xl bg-slate-50 p-1.5 shadow-md">
+            <img 
+              src="/images/feenix-repair-logo.png" 
+              alt="Feenix Repair" 
+              className={cn(
+                "object-contain",
+                collapsed ? "h-8 w-auto" : "h-11 w-auto max-w-[170px]"
+              )}
+            />
+          </div>
+        </Link>
         <Button
           variant="ghost"
           size="icon"
-          onClick={onToggle}
+          onClick={() => {
+            console.log("Sidebar collapsed:", !collapsed)
+            onToggle()
+          }}
           className="hidden md:flex text-slate-400 hover:text-white hover:bg-slate-800"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-expanded={!collapsed}
@@ -116,7 +114,7 @@ export function DealerSidebar({
         </Button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-3 pt-5" aria-label="Dealer sidebar">
+      <nav className="flex-1 min-h-0 overflow-y-auto p-3 pt-5 scrollbar-hide" aria-label="Dealer sidebar">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon
@@ -133,18 +131,14 @@ export function DealerSidebar({
                 >
                   <Icon className="h-[18px] w-[18px]" />
                 </span>
-                <AnimatePresence mode="wait">
-                  {!collapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
-                      exit={{ opacity: 0, width: 0 }}
-                      className="ml-3 flex-1 overflow-hidden whitespace-nowrap text-slate-200 group-hover:text-white"
-                    >
-                      {item.title}
-                    </motion.span>
+                <span
+                  className={cn(
+                    "ml-3 whitespace-nowrap text-slate-200 group-hover:text-white transition-all duration-200",
+                    collapsed ? "w-0 overflow-hidden opacity-0" : "flex-1 opacity-100"
                   )}
-                </AnimatePresence>
+                >
+                  {item.title}
+                </span>
                 {!collapsed && item.comingSoon && (
                   <span className="ml-auto rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-400">
                     Soon
@@ -160,13 +154,14 @@ export function DealerSidebar({
                     href={item.href}
                     onClick={onMobileClose}
                     className={cn(
-                      "group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                      "group flex items-center rounded-xl text-sm font-medium transition-all",
                       active
                         ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
                         : "text-slate-400 hover:bg-slate-800 hover:text-white",
-                      collapsed && "justify-center px-2"
+                      collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5"
                     )}
                     aria-current={active ? "page" : undefined}
+                    title={collapsed ? item.title : undefined}
                   >
                     {content}
                   </Link>
@@ -174,9 +169,10 @@ export function DealerSidebar({
                   <button
                     disabled
                     className={cn(
-                      "flex w-full cursor-not-allowed items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 opacity-50",
-                      collapsed && "justify-center px-2"
+                      "flex w-full cursor-not-allowed items-center rounded-xl text-sm font-medium text-slate-600 opacity-50",
+                      collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5"
                     )}
+                    title={collapsed ? item.title : undefined}
                   >
                     {content}
                   </button>
@@ -187,30 +183,27 @@ export function DealerSidebar({
         </ul>
       </nav>
 
-      <div className="border-t border-slate-800 p-3">
+      <div className="shrink-0 border-t border-slate-800 p-3">
         <Button
           variant="ghost"
           onClick={handleLogout}
           className={cn(
-            "w-full justify-start rounded-xl text-sm font-medium text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400",
-            collapsed && "justify-center px-2"
+            "w-full rounded-xl text-sm font-medium text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400",
+            collapsed ? "justify-center px-2" : "justify-start gap-3 px-3"
           )}
+          title={collapsed ? "Logout" : undefined}
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400">
             <LogOut className="h-[18px] w-[18px]" />
           </span>
-          <AnimatePresence mode="wait">
-            {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                className="ml-3 overflow-hidden whitespace-nowrap"
-              >
-                Logout
-              </motion.span>
+          <span
+            className={cn(
+              "whitespace-nowrap transition-all duration-200",
+              collapsed ? "w-0 overflow-hidden opacity-0" : "opacity-100"
             )}
-          </AnimatePresence>
+          >
+            Logout
+          </span>
         </Button>
       </div>
     </div>
@@ -219,14 +212,14 @@ export function DealerSidebar({
   return (
     <>
       {/* Desktop Sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{ width: collapsed ? 80 : 280 }}
-        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className="hidden h-screen flex-col border-r border-slate-800 bg-slate-950 md:flex"
+      <aside
+        className={cn(
+          "hidden h-dvh shrink-0 overflow-hidden border-r border-slate-800 bg-slate-950 transition-all duration-300 ease-in-out md:flex",
+          collapsed ? "w-20" : "w-[280px]"
+        )}
       >
         {sidebarContent}
-      </motion.aside>
+      </aside>
 
       {/* Mobile Drawer */}
       <AnimatePresence>
@@ -246,7 +239,7 @@ export function DealerSidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className="fixed inset-y-0 left-0 z-50 w-[280px] border-r border-slate-800 bg-slate-950 shadow-2xl md:hidden"
+              className="fixed inset-y-0 left-0 z-50 h-dvh w-[280px] border-r border-slate-800 bg-slate-950 shadow-2xl md:hidden"
             >
               {sidebarContent}
             </motion.aside>
