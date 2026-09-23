@@ -131,7 +131,7 @@ export function DealerTable({
                         </DropdownMenuItem>
                       </>
                     )}
-                    {dealer.status === "APPROVED" && (
+                    {dealer.status === "VERIFIED" && (
                       <DropdownMenuItem onSelect={() => onAction("suspend", dealer)}>
                         Suspend
                       </DropdownMenuItem>

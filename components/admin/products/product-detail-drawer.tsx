@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AdminDrawer } from "@/components/admin/shared/admin-drawer"
 import { cn } from "@/lib/utils"
 import { dateFormatter } from "@/lib/utils"
-import { formatCurrency, AdminProduct, ProductStatus } from "./data"
+import { formatCurrency } from "./data"
+import type { AdminProduct } from "@/lib/admin/products-service"
 import { CheckCircle2, XCircle, MessageSquare, Archive, Trash2, Send, Package, ImageIcon, Clock } from "lucide-react"
 
 interface ProductDetailDrawerProps {
@@ -18,11 +19,10 @@ interface ProductDetailDrawerProps {
   onAddComment: (text: string) => void
 }
 
-const statusStyles: Record<ProductStatus, string> = {
-  PENDING: "bg-amber-100 text-amber-700",
-  APPROVED: "bg-emerald-100 text-emerald-700",
-  REJECTED: "bg-rose-100 text-rose-700",
-  ARCHIVED: "bg-slate-100 text-slate-700",
+const statusStyles: Record<string, string> = {
+  ACTIVE: "bg-emerald-100 text-emerald-700",
+  INACTIVE: "bg-slate-100 text-slate-700",
+  OUT_OF_STOCK: "bg-rose-100 text-rose-700",
 }
 
 export function ProductDetailDrawer({ product, onClose, onAction, onAddComment }: ProductDetailDrawerProps) {
@@ -67,7 +67,9 @@ export function ProductDetailDrawer({ product, onClose, onAction, onAddComment }
       {product && (
         <div className="space-y-6">
           <div className="flex flex-wrap items-center gap-3">
-            <Badge className={cn("text-xs capitalize", statusStyles[product.status])}>{product.status.toLowerCase()}</Badge>
+            <Badge className={cn("text-xs capitalize", statusStyles[product.status] || "bg-slate-100 text-slate-700")}>
+              {product.status.toLowerCase().replace("_", " ")}
+            </Badge>
             <span className="text-sm text-slate-500">Updated {dateFormatter(product.updated_at, "long")}</span>
           </div>
 
@@ -102,8 +104,8 @@ export function ProductDetailDrawer({ product, onClose, onAction, onAddComment }
             <MetricCard label="Bulk Price" value={product.bulk_price ? formatCurrency(product.bulk_price) : "—"} />
             <MetricCard label="Stock" value={product.stock.toString()} />
             <MetricCard label="Min Order" value={product.min_order.toString()} />
-            <MetricCard label="Condition" value={product.condition} />
-            <MetricCard label="Warranty" value={product.warranty} />
+            <MetricCard label="Condition" value={product.condition || "—"} />
+            <MetricCard label="Warranty" value={product.warranty || "—"} />
           </div>
 
           <Card className="rounded-2xl border-slate-200 shadow-sm">
@@ -111,22 +113,32 @@ export function ProductDetailDrawer({ product, onClose, onAction, onAddComment }
               <CardTitle className="text-base font-semibold">Description</CardTitle>
             </CardHeader>
             <CardContent className="pt-0 text-sm text-slate-600">
-              <p>{product.description}</p>
+              <p>{product.description || "No description provided."}</p>
             </CardContent>
           </Card>
 
           <Card className="rounded-2xl border-slate-200 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Specifications</CardTitle>
+              <CardTitle className="text-base font-semibold">Product Details</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <dl className="grid gap-2 sm:grid-cols-2">
-                {product.specifications.map((spec) => (
-                  <div key={spec.label} className="rounded-lg bg-slate-50 p-3">
-                    <dt className="text-xs font-medium text-slate-400">{spec.label}</dt>
-                    <dd className="text-sm font-medium text-slate-900">{spec.value}</dd>
-                  </div>
-                ))}
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <dt className="text-xs font-medium text-slate-400">Brand</dt>
+                  <dd className="text-sm font-medium text-slate-900">{product.brand_name || "—"}</dd>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <dt className="text-xs font-medium text-slate-400">Category</dt>
+                  <dd className="text-sm font-medium text-slate-900">{product.category_name || "—"}</dd>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <dt className="text-xs font-medium text-slate-400">Model</dt>
+                  <dd className="text-sm font-medium text-slate-900">{product.model_name || "—"}</dd>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <dt className="text-xs font-medium text-slate-400">Quality</dt>
+                  <dd className="text-sm font-medium text-slate-900">{product.quality || "—"}</dd>
+                </div>
               </dl>
             </CardContent>
           </Card>
@@ -137,7 +149,7 @@ export function ProductDetailDrawer({ product, onClose, onAction, onAddComment }
             </CardHeader>
             <CardContent className="space-y-2 pt-0 text-sm">
               <p className="font-medium text-slate-900">{product.dealer_name}</p>
-              <p className="text-slate-600">{product.dealer_email}</p>
+              <p className="text-slate-600">{product.dealer_email || "—"}</p>
             </CardContent>
           </Card>
 
@@ -145,60 +157,30 @@ export function ProductDetailDrawer({ product, onClose, onAction, onAddComment }
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Clock className="h-4 w-4 text-slate-500" />
-                Approval History
+                Timestamps
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <ul className="space-y-4">
-                {product.approval_history.map((event, index) => (
-                  <li key={index} className="flex gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                      <Clock className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        {event.action} <span className="text-slate-500">by {event.by}</span>
-                      </p>
-                      <p className="text-xs text-slate-500">{dateFormatter(event.timestamp, "long")}</p>
-                      {event.reason && <p className="mt-1 text-xs text-rose-600">Reason: {event.reason}</p>}
-                    </div>
-                  </li>
-                ))}
+              <ul className="space-y-2">
+                <li className="flex gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                    <Clock className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Created</p>
+                    <p className="text-xs text-slate-500">{dateFormatter(product.created_at, "long")}</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                    <Clock className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Last Updated</p>
+                    <p className="text-xs text-slate-500">{dateFormatter(product.updated_at, "long")}</p>
+                  </div>
+                </li>
               </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border-slate-200 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Comments</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-0">
-              {product.comments.length === 0 ? (
-                <p className="text-sm text-slate-500">No comments yet.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {product.comments.map((c) => (
-                    <li key={c.id} className="rounded-xl bg-slate-50 p-3">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-slate-900">{c.author}</p>
-                        <span className="text-xs text-slate-400">{dateFormatter(c.timestamp, "long")}</span>
-                      </div>
-                      <p className="mt-1 text-sm text-slate-600">{c.text}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a comment..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                />
-                <Button size="icon" onClick={handleSend}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
             </CardContent>
           </Card>
 

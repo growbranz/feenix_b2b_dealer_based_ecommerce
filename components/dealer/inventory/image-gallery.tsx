@@ -6,6 +6,7 @@ import { Upload, X, GripVertical, Image as ImageIcon, Star, ZoomIn } from "lucid
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { createClient } from "@/lib/supabase/client"
 
 interface ImageGalleryProps {
   images: string[]
@@ -13,6 +14,7 @@ interface ImageGalleryProps {
   maxImages?: number
   disabled?: boolean
   showPrimaryBadge?: boolean
+  productId?: string // Optional: needed for Storage upload path
 }
 
 export function ImageGallery({
@@ -21,6 +23,7 @@ export function ImageGallery({
   maxImages = 5,
   disabled = false,
   showPrimaryBadge = true,
+  productId,
 }: ImageGalleryProps) {
   const [isDragging, setIsDragging] = React.useState(false)
   const [isUploading, setIsUploading] = React.useState(false)
@@ -62,28 +65,104 @@ export function ImageGallery({
 
     setIsUploading(true)
     try {
-      // TODO: Implement Supabase storage upload with compression
-      // For now, create local previews
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        throw new Error("You must be logged in to upload images")
+      }
+
       const newImages = await Promise.all(
-        imageFiles.map(
-          (file) =>
-            new Promise<string>((resolve) => {
-              const reader = new FileReader()
-              reader.onloadend = () => resolve(reader.result as string)
-              reader.readAsDataURL(file)
+        imageFiles.map(async (file) => {
+          // Validate file type
+          if (file.type !== "image/png" && file.type !== "image/jpeg" && file.type !== "image/jpg") {
+            throw new Error("Only PNG and JPG images are allowed")
+          }
+
+          // Validate file size (5MB max)
+          if (file.size > 5 * 1024 * 1024) {
+            throw new Error("Image size must be less than 5MB")
+          }
+
+          // Generate unique filename
+          const ext = file.type === "image/png" ? "png" : "jpg"
+          const timestamp = Date.now()
+          const random = Math.random().toString(36).substring(2, 10)
+          const filename = `${timestamp}-${random}.${ext}`
+
+          // Determine storage path
+          let storagePath: string
+          if (productId) {
+            // Path: products/{dealer_id}/{product_id}/{filename}
+            storagePath = `products/${user.id}/${productId}/${filename}`
+          } else {
+            // Temporary path for new products: products/{dealer_id}/temp/{filename}
+            storagePath = `products/${user.id}/temp/${filename}`
+          }
+
+          console.log("PRODUCT IMAGE UPLOAD", {
+            productId: productId || "new",
+            fileName: file.name,
+            fileSize: file.size,
+            storagePath,
+          })
+
+          // Upload to Supabase Storage
+          const { error: uploadError } = await supabase.storage
+            .from("product-images")
+            .upload(storagePath, file, {
+              contentType: file.type,
+              upsert: false,
             })
-        )
+
+          if (uploadError) {
+            console.error("PRODUCT IMAGE UPLOAD FAILED", {
+              storagePath,
+              errorMessage: uploadError.message,
+              errorCode: uploadError,
+            })
+            throw new Error(`Failed to upload image: ${uploadError.message}`)
+          }
+
+          // Get public URL
+          const { data: publicUrlData } = supabase.storage
+            .from("product-images")
+            .getPublicUrl(storagePath)
+
+          console.log("PRODUCT IMAGE UPLOAD SUCCESS", {
+            storagePath,
+            hasPublicUrl: !!publicUrlData.publicUrl,
+          })
+
+          return publicUrlData.publicUrl
+        })
       )
+
       onChange([...images, ...newImages])
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error)
-      alert("Failed to upload images")
+      alert(error?.message || "Failed to upload images")
     } finally {
       setIsUploading(false)
     }
   }
 
-  const handleRemove = (index: number) => {
+  const handleRemove = async (index: number) => {
+    const imageUrl = images[index]
+    
+    // Remove from Supabase Storage if it's a Storage URL
+    if (imageUrl && imageUrl.includes("/product-images/")) {
+      try {
+        const supabase = createClient()
+        const path = imageUrl.split("/product-images/")[1].split("?")[0]
+        await supabase.storage.from("product-images").remove([path])
+        console.log("PRODUCT IMAGE REMOVED FROM STORAGE", { path })
+      } catch (error) {
+        console.error("Failed to remove image from storage:", error)
+        // Don't block the UI update if storage removal fails
+      }
+    }
+    
     const newImages = images.filter((_, i) => i !== index)
     onChange(newImages)
   }

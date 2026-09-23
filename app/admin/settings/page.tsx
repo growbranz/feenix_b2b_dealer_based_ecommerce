@@ -1,5 +1,5 @@
-import { SettingsManagement } from "@/components/admin/settings/settings-management"
+import { SettingsPage } from "@/components/admin/settings/settings-page"
 
-export default function SettingsPage() {
-  return <SettingsManagement />
+export default function AdminSettingsPage() {
+  return <SettingsPage />
 }

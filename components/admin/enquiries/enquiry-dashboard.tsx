@@ -8,7 +8,6 @@ import { DashboardCard } from "@/components/shared/dashboard-card"
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog"
 import { AdminDrawer } from "@/components/admin/shared/admin-drawer"
 import { EnquiryDataTable } from "./enquiry-data-table"
-import { mockEnquiries, Enquiry, EnquiryStatus, dealerOptions, dealerName } from "@/lib/enquiry/data"
 import { Inbox, Clock, CheckCircle2, Send } from "lucide-react"
 import {
   ResponsiveContainer,
@@ -21,56 +20,79 @@ import {
   AreaChart,
   Area,
 } from "recharts"
-
-const monthlyData = [
-  { month: "Jan", enquiries: 12 },
-  { month: "Feb", enquiries: 18 },
-  { month: "Mar", enquiries: 15 },
-  { month: "Apr", enquiries: 22 },
-  { month: "May", enquiries: 28 },
-  { month: "Jun", enquiries: 34 },
-]
-
-const responseTimeData = [
-  { dealer: "MobileSpares", hours: 4.2 },
-  { dealer: "PhoneCare", hours: 6.5 },
-  { dealer: "DisplayMax", hours: 8.1 },
-  { dealer: "Feenix Store", hours: 3.5 },
-]
+import type { AdminEnquiry, AdminProfile } from "@/lib/admin/enquiries-service"
+import {
+  getAdminEnquiries,
+  getAdminDealers,
+  getQuotedEnquiryIds,
+  getMonthlyEnquiries,
+  getDealerResponseTimes,
+  assignEnquirySeller,
+  cancelEnquiry,
+} from "@/lib/admin/enquiries-service"
+import type { EnquiryStatus } from "@/lib/enquiry/data"
 
 const statusStyles: Record<EnquiryStatus, string> = {
-  NEW: "bg-blue-100 text-blue-700",
+  PENDING: "bg-amber-100 text-amber-700",
   ASSIGNED: "bg-violet-100 text-violet-700",
   ACCEPTED: "bg-emerald-100 text-emerald-700",
   REJECTED: "bg-rose-100 text-rose-700",
-  QUOTED: "bg-amber-100 text-amber-700",
-  NEGOTIATION: "bg-orange-100 text-orange-700",
-  CLOSED: "bg-slate-100 text-slate-700",
-  CANCELLED: "bg-slate-100 text-slate-700",
+  COMPLETED: "bg-blue-100 text-blue-700",
 }
 
 export function EnquiryDashboard() {
-  const [enquiries, setEnquiries] = React.useState<Enquiry[]>(mockEnquiries)
-  const [assigning, setAssigning] = React.useState<Enquiry | null>(null)
+  const [enquiries, setEnquiries] = React.useState<AdminEnquiry[]>([])
+  const [dealers, setDealers] = React.useState<AdminProfile[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const [assigning, setAssigning] = React.useState<AdminEnquiry | null>(null)
   const [selectedDealers, setSelectedDealers] = React.useState<string[]>([])
   const [cancelId, setCancelId] = React.useState<string | null>(null)
 
-  const stats = React.useMemo(() => {
-    const counts = {
-      total: enquiries.length,
-      new: enquiries.filter((e) => e.status === "NEW").length,
-      assigned: enquiries.filter((e) => e.status === "ASSIGNED").length,
-      pending: enquiries.filter((e) => e.status === "NEW" || e.status === "ASSIGNED").length,
-      quoted: enquiries.filter((e) => e.status === "QUOTED").length,
-      closed: enquiries.filter((e) => e.status === "CLOSED").length,
-      cancelled: enquiries.filter((e) => e.status === "CANCELLED").length,
-    }
-    return counts
-  }, [enquiries])
+  const [monthlyData, setMonthlyData] = React.useState<{ month: string; enquiries: number }[]>([])
+  const [responseTimeData, setResponseTimeData] = React.useState<{ dealer: string; hours: number }[]>([])
+  const [quotedCount, setQuotedCount] = React.useState(0)
 
-  const openAssign = (enquiry: Enquiry) => {
+  const loadData = React.useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const [fetchedEnquiries, fetchedDealers] = await Promise.all([getAdminEnquiries(), getAdminDealers()])
+      setEnquiries(fetchedEnquiries)
+      setDealers(fetchedDealers)
+
+      const monthly = await getMonthlyEnquiries(fetchedEnquiries)
+      setMonthlyData(monthly)
+
+      const responseTimes = await getDealerResponseTimes(fetchedEnquiries)
+      setResponseTimeData(responseTimes)
+
+      const quotedIds = await getQuotedEnquiryIds(fetchedEnquiries.map((e) => e.id))
+      setQuotedCount(quotedIds.size)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load enquiries")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  const stats = React.useMemo(() => {
+    return {
+      total: enquiries.length,
+      pending: enquiries.filter((e) => e.status === "PENDING").length,
+      quoted: quotedCount,
+      closed: enquiries.filter((e) => e.status === "COMPLETED").length,
+    }
+  }, [enquiries, quotedCount])
+
+  const openAssign = (enquiry: AdminEnquiry) => {
     setAssigning(enquiry)
-    setSelectedDealers(enquiry.assigned_dealer_ids)
+    setSelectedDealers([enquiry.seller?.id].filter(Boolean) as string[])
   }
 
   const closeAssign = () => {
@@ -78,54 +100,36 @@ export function EnquiryDashboard() {
     setSelectedDealers([])
   }
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!assigning) return
-    const now = new Date().toISOString()
-    setEnquiries((prev) =>
-      prev.map((e) =>
-        e.id === assigning.id
-          ? {
-              ...e,
-              assigned_dealer_ids: selectedDealers,
-              status: selectedDealers.length > 0 ? "ASSIGNED" : "NEW",
-              timeline: [
-                ...e.timeline,
-                {
-                  id: Math.random().toString(36).slice(2),
-                  action: selectedDealers.length > 0 ? `Assigned to ${selectedDealers.map(dealerName).join(", ")}` : "Unassigned",
-                  actor: "Admin",
-                  timestamp: now,
-                },
-              ],
-              updated_at: now,
-            }
-          : e
-      )
-    )
-    closeAssign()
+    try {
+      const sellerId = selectedDealers[0] || null
+      await assignEnquirySeller(assigning.id, sellerId)
+      closeAssign()
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to assign enquiry")
+    }
   }
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (!cancelId) return
-    const now = new Date().toISOString()
-    setEnquiries((prev) =>
-      prev.map((e) =>
-        e.id === cancelId
-          ? {
-              ...e,
-              status: "CANCELLED",
-              timeline: [...e.timeline, { id: Math.random().toString(36).slice(2), action: "Cancelled", actor: "Admin", timestamp: now }],
-              updated_at: now,
-            }
-          : e
-      )
-    )
-    setCancelId(null)
+    try {
+      await cancelEnquiry(cancelId)
+      setCancelId(null)
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to cancel enquiry")
+    }
   }
 
   const toggleDealer = (id: string) => {
-    setSelectedDealers((prev) => (prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]))
+    setSelectedDealers((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [id]
+    )
   }
+
+  const hasResponseData = responseTimeData.length > 0
 
   return (
     <motion.div
@@ -140,11 +144,17 @@ export function EnquiryDashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <DashboardCard title="Total Enquiries" value={stats.total.toString()} icon={Inbox} iconGradient="blue" />
-        <DashboardCard title="Pending" value={stats.pending.toString()} icon={Clock} iconGradient="orange" />
-        <DashboardCard title="Quoted" value={stats.quoted.toString()} icon={Send} iconGradient="green" />
-        <DashboardCard title="Closed" value={stats.closed.toString()} icon={CheckCircle2} iconGradient="purple" />
+        <DashboardCard title="Total Enquiries" value={isLoading ? "—" : stats.total.toString()} icon={Inbox} iconGradient="blue" />
+        <DashboardCard title="Pending" value={isLoading ? "—" : stats.pending.toString()} icon={Clock} iconGradient="orange" />
+        <DashboardCard title="Quoted" value={isLoading ? "—" : stats.quoted.toString()} icon={Send} iconGradient="green" />
+        <DashboardCard title="Closed" value={isLoading ? "—" : stats.closed.toString()} icon={CheckCircle2} iconGradient="purple" />
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <motion.div
@@ -157,21 +167,25 @@ export function EnquiryDashboard() {
           <h3 className="text-lg font-semibold text-slate-900">Monthly Enquiries</h3>
           <p className="text-sm text-slate-500">Enquiry volume over the last 6 months</p>
           <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData}>
-                <defs>
-                  <linearGradient id="colorEnq" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }} />
-                <Area type="monotone" dataKey="enquiries" stroke="#3b82f6" fillOpacity={1} fill="url(#colorEnq)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center text-sm text-slate-400">Loading...</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyData}>
+                  <defs>
+                    <linearGradient id="colorEnq" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                  <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }} />
+                  <Area type="monotone" dataKey="enquiries" stroke="#3b82f6" fillOpacity={1} fill="url(#colorEnq)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
@@ -185,20 +199,40 @@ export function EnquiryDashboard() {
           <h3 className="text-lg font-semibold text-slate-900">Dealer Response Time</h3>
           <p className="text-sm text-slate-500">Average hours to first response</p>
           <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={responseTimeData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="dealer" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }} />
-                <Bar dataKey="hours" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center text-sm text-slate-400">Loading...</div>
+            ) : !hasResponseData ? (
+              <div className="flex h-full flex-col items-center justify-center text-center text-sm text-slate-500">
+                <p>No response time data available yet</p>
+                <p className="text-xs text-slate-400">Dealer responses will appear once quotations are sent.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={responseTimeData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="dealer" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                  <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }} />
+                  <Bar dataKey="hours" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
       </div>
 
-      <EnquiryDataTable enquiries={enquiries} onAssign={openAssign} onCancel={setCancelId} statusStyles={statusStyles} />
+      {isLoading ? (
+        <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 text-slate-500">
+          <p className="text-sm font-medium">Loading enquiries...</p>
+        </div>
+      ) : (
+        <EnquiryDataTable
+          enquiries={enquiries}
+          onAssign={openAssign}
+          onCancel={setCancelId}
+          statusStyles={statusStyles}
+        />
+      )}
 
       <AdminDrawer
         open={!!assigning}
@@ -212,11 +246,11 @@ export function EnquiryDashboard() {
         }
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-500">Select one or more dealers to assign this enquiry to.</p>
-          {dealerOptions.map((dealer) => (
+          <p className="text-sm text-slate-500">Select a dealer to assign this enquiry to.</p>
+          {dealers.map((dealer) => (
             <label key={dealer.id} className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
               <Checkbox checked={selectedDealers.includes(dealer.id)} onCheckedChange={() => toggleDealer(dealer.id)} />
-              <span className="text-sm font-medium text-slate-700">{dealer.name}</span>
+              <span className="text-sm font-medium text-slate-700">{dealer.business_name || dealer.name}</span>
             </label>
           ))}
         </div>

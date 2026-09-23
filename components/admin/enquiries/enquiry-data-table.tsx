@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FilterSelect } from "@/components/admin/shared/filter-select"
 import { SearchInput } from "@/components/admin/shared/search-input"
-import { Enquiry, EnquiryStatus, priorityOptions, statusOptions, dealerOptions, dealerName } from "@/lib/enquiry/data"
+import { AdminEnquiry } from "@/lib/admin/enquiries-service"
+import { priorityOptions, statusOptions } from "@/lib/enquiry/data"
 import { dateFormatter } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { ArrowUpDown, Eye, Users, XCircle } from "lucide-react"
@@ -17,10 +18,10 @@ type SortKey = "customer_name" | "created_at" | "priority"
 type SortDir = "asc" | "desc"
 
 interface EnquiryDataTableProps {
-  enquiries: Enquiry[]
-  onAssign: (enquiry: Enquiry) => void
+  enquiries: AdminEnquiry[]
+  onAssign: (enquiry: AdminEnquiry) => void
   onCancel: (id: string) => void
-  statusStyles: Record<EnquiryStatus, string>
+  statusStyles: Record<string, string>
 }
 
 const priorityBadge: Record<string, string> = {
@@ -40,22 +41,62 @@ export function EnquiryDataTable({ enquiries, onAssign, onCancel, statusStyles }
   const [sort, setSort] = React.useState<{ key: SortKey; dir: SortDir }>({ key: "created_at", dir: "desc" })
   const [page, setPage] = React.useState(1)
 
-  const categories = React.useMemo(() => [...new Set(enquiries.map((e) => e.category_name))], [enquiries])
-  const brands = React.useMemo(() => [...new Set(enquiries.map((e) => e.brand_name))], [enquiries])
+  const dealerOptions = React.useMemo(() => {
+    const seen = new Set<string>()
+    const options: { value: string; label: string }[] = []
+    for (const e of enquiries) {
+      const seller = e.seller
+      if (!seller?.id || seen.has(seller.id)) continue
+      seen.add(seller.id)
+      options.push({
+        value: seller.id,
+        label: seller.business_name || seller.name || "—",
+      })
+    }
+    return [{ value: "all", label: "All Dealers" }, ...options.sort((a, b) => a.label.localeCompare(b.label))]
+  }, [enquiries])
+
+  const categories = React.useMemo(() => {
+    const set = new Set<string>()
+    for (const e of enquiries) {
+      if (e.product?.category) set.add(e.product.category)
+    }
+    return [...set].sort()
+  }, [enquiries])
+
+  const brands = React.useMemo(() => {
+    const set = new Set<string>()
+    for (const e of enquiries) {
+      if (e.product?.brand) set.add(e.product.brand)
+    }
+    return [...set].sort()
+  }, [enquiries])
+
+  const customerName = (e: AdminEnquiry) => e.buyer?.business_name || e.buyer?.name || "—"
+  const assignedName = (e: AdminEnquiry) => e.seller?.business_name || e.seller?.name || "—"
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase()
     let data = enquiries.filter((e) => {
+      const customer = customerName(e).toLowerCase()
+      const seller = assignedName(e).toLowerCase()
+      const product = (e.product?.title || "").toLowerCase()
+      const brand = (e.product?.brand || "").toLowerCase()
+
       const matchesSearch =
         !q ||
         e.id.toLowerCase().includes(q) ||
-        e.customer_name.toLowerCase().includes(q) ||
-        e.product_name.toLowerCase().includes(q)
+        customer.includes(q) ||
+        seller.includes(q) ||
+        product.includes(q) ||
+        brand.includes(q)
+
       const matchesPriority = priorityFilter === "all" || e.priority === priorityFilter
       const matchesStatus = statusFilter === "all" || e.status === statusFilter
-      const matchesDealer = dealerFilter === "all" || e.assigned_dealer_ids.includes(dealerFilter)
-      const matchesCategory = categoryFilter === "all" || e.category_name === categoryFilter
-      const matchesBrand = brandFilter === "all" || e.brand_name === brandFilter
+      const matchesDealer = dealerFilter === "all" || e.seller?.id === dealerFilter
+      const matchesCategory = categoryFilter === "all" || e.product?.category === categoryFilter
+      const matchesBrand = brandFilter === "all" || e.product?.brand === brandFilter
+
       return matchesSearch && matchesPriority && matchesStatus && matchesDealer && matchesCategory && matchesBrand
     })
 
@@ -63,12 +104,12 @@ export function EnquiryDataTable({ enquiries, onAssign, onCancel, statusStyles }
       let aVal: string | number = ""
       let bVal: string | number = ""
       if (sort.key === "customer_name") {
-        aVal = a.customer_name
-        bVal = b.customer_name
+        aVal = customerName(a).toLowerCase()
+        bVal = customerName(b).toLowerCase()
       } else if (sort.key === "priority") {
         const p = { LOW: 1, MEDIUM: 2, HIGH: 3, URGENT: 4 }
-        aVal = p[a.priority]
-        bVal = p[b.priority]
+        aVal = p[a.priority] || 0
+        bVal = p[b.priority] || 0
       } else if (sort.key === "created_at") {
         aVal = new Date(a.created_at).getTime()
         bVal = new Date(b.created_at).getTime()
@@ -85,6 +126,12 @@ export function EnquiryDataTable({ enquiries, onAssign, onCancel, statusStyles }
   const currentPage = Math.min(page, pageCount)
   const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
+  React.useEffect(() => {
+    if (page > pageCount) {
+      setPage(pageCount)
+    }
+  }, [page, pageCount])
+
   const toggleSort = (key: SortKey) => {
     setSort((s) => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }))
     setPage(1)
@@ -96,7 +143,7 @@ export function EnquiryDataTable({ enquiries, onAssign, onCancel, statusStyles }
         <SearchInput placeholder="Search enquiries..." value={search} onChange={(e) => setSearch(e.target.value)} />
         <FilterSelect value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} options={priorityOptions} className="lg:w-44" />
         <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} options={statusOptions} className="lg:w-44" />
-        <FilterSelect value={dealerFilter} onChange={(e) => setDealerFilter(e.target.value)} options={[{ value: "all", label: "All Dealers" }, ...dealerOptions.map((d) => ({ value: d.id, label: d.name }))]} className="lg:w-48" />
+        <FilterSelect value={dealerFilter} onChange={(e) => setDealerFilter(e.target.value)} options={dealerOptions} className="lg:w-48" />
         <FilterSelect value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} options={[{ value: "all", label: "All Categories" }, ...categories.map((c) => ({ value: c, label: c }))]} className="lg:w-44" />
         <FilterSelect value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} options={[{ value: "all", label: "All Brands" }, ...brands.map((b) => ({ value: b, label: b }))]} className="lg:w-44" />
       </div>
@@ -124,18 +171,16 @@ export function EnquiryDataTable({ enquiries, onAssign, onCancel, statusStyles }
             {paginated.map((e) => (
               <tr key={e.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50/60">
                 <td className="px-4 py-3 text-sm font-medium text-slate-900">{e.id}</td>
-                <td className="px-4 py-3 text-sm text-slate-700">{e.customer_name}</td>
-                <td className="px-4 py-3 text-sm text-slate-700">{e.product_name}</td>
-                <td className="px-4 py-3 text-sm text-slate-600">{e.brand_name} / {e.category_name}</td>
+                <td className="px-4 py-3 text-sm text-slate-700">{customerName(e)}</td>
+                <td className="px-4 py-3 text-sm text-slate-700">{e.product?.title || "—"}</td>
+                <td className="px-4 py-3 text-sm text-slate-600">{e.product?.brand || "—"} / {e.product?.category || "—"}</td>
                 <td className="px-4 py-3">
                   <Badge className={cn("text-xs capitalize", priorityBadge[e.priority])}>{e.priority.toLowerCase()}</Badge>
                 </td>
                 <td className="px-4 py-3">
                   <Badge className={cn("text-xs capitalize", statusStyles[e.status])}>{e.status.toLowerCase()}</Badge>
                 </td>
-                <td className="px-4 py-3 text-sm text-slate-600">
-                  {e.assigned_dealer_ids.length > 0 ? e.assigned_dealer_ids.map(dealerName).join(", ") : "—"}
-                </td>
+                <td className="px-4 py-3 text-sm text-slate-600">{assignedName(e)}</td>
                 <td className="px-4 py-3 text-sm text-slate-500">{dateFormatter(e.created_at, "short")}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-1">

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { slugify } from "@/lib/utils"
 import { AddProductForm } from "@/components/dealer/add-product-form"
+import { createProduct } from "@/lib/dealer/product-actions"
 
 interface Option {
   id: string
@@ -46,49 +47,18 @@ export default function AddProductPage() {
 
   const handleSubmit = async (data: any) => {
     try {
-      const supabase = createClient()
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        throw new Error("You must be logged in to publish a product")
+      const result = await createProduct(data)
+      
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create product")
       }
 
-      const status = data.availability === "out_of_stock" ? "OUT_OF_STOCK" : "ACTIVE"
-
-      const productPayload = {
-        dealer_id: user.id,
-        category_id: data.category_id,
-        brand_id: data.brand_id,
-        model_id: data.model_id,
-        title: data.title,
-        slug: slugify(data.title),
-        sku: data.sku,
-        description: data.description,
-        price: data.price,
-        bulk_price: typeof data.bulk_price === "number" && !Number.isNaN(data.bulk_price) ? data.bulk_price : null,
-        stock: data.stock,
-        minimum_order: data.minimum_order,
-        warranty: data.warranty || null,
-        status,
-        featured: false,
-      }
-
-      const { data: product, error } = await (supabase
-        .from("products") as any)
-        .insert([productPayload])
-        .select()
-        .single()
-
-      if (error) {
-        throw error
-      }
-
-      console.log("Product created:", product)
-      alert("Product published successfully!")
+      alert("Product created as draft successfully!")
       router.push("/dealer/products")
       router.refresh()
     } catch (error: any) {
       console.error("Submit error:", error)
-      alert(error?.message || error?.error_description || "Failed to publish product")
+      alert(error?.message || "Failed to create product")
     }
   }
 
@@ -105,7 +75,7 @@ export default function AddProductPage() {
       >
         <h1 className="text-3xl font-bold tracking-tight">Add New Product</h1>
         <p className="mt-2 text-muted-foreground">
-          Fill in the details to add a new product to your inventory
+          Fill in the details to add a new product. Products are created as drafts and can be submitted for approval.
         </p>
       </motion.div>
 

@@ -9,29 +9,106 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AdminDrawer } from "@/components/admin/shared/admin-drawer"
 import { FilterSelect } from "@/components/admin/shared/filter-select"
-import { mockEnquiries, Enquiry, EnquiryStatus, dealerOptions, dealerName, statusOptions } from "@/lib/enquiry/data"
-import { dateFormatter } from "@/lib/utils"
+import {
+  AdminEnquiry,
+  getAdminEnquiryDetail,
+  getAdminDealers,
+  updateEnquiryStatus,
+  assignEnquirySeller,
+  addEnquiryNote,
+} from "@/lib/admin/enquiries-service"
+import { statusOptions } from "@/lib/enquiry/data"
+import { currencyFormatter, dateFormatter } from "@/lib/utils"
 import { cn } from "@/lib/utils"
-import { User, Phone, Mail, MapPin, Building2, Package, Hash, Clock, FileText, StickyNote } from "lucide-react"
+import { User, Phone, Mail, MapPin, Building2, Package, Hash, Clock, FileText, StickyNote, Inbox } from "lucide-react"
+import type { EnquiryStatus } from "@/lib/enquiry/data"
 
-const statusStyles: Record<EnquiryStatus, string> = {
-  NEW: "bg-blue-100 text-blue-700",
+const statusStyles: Record<string, string> = {
+  PENDING: "bg-amber-100 text-amber-700",
   ASSIGNED: "bg-violet-100 text-violet-700",
   ACCEPTED: "bg-emerald-100 text-emerald-700",
   REJECTED: "bg-rose-100 text-rose-700",
+  COMPLETED: "bg-blue-100 text-blue-700",
   QUOTED: "bg-amber-100 text-amber-700",
-  NEGOTIATION: "bg-orange-100 text-orange-700",
-  CLOSED: "bg-slate-100 text-slate-700",
-  CANCELLED: "bg-slate-100 text-slate-700",
 }
 
 export function EnquiryDetail() {
   const params = useParams<{ id: string }>()
   const id = params.id
-  const [enquiry, setEnquiry] = React.useState<Enquiry | null>(() => mockEnquiries.find((e) => e.id === id) || null)
+
+  const [enquiry, setEnquiry] = React.useState<AdminEnquiry | null>(null)
+  const [dealers, setDealers] = React.useState<{ id: string; business_name: string | null; name: string }[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const [note, setNote] = React.useState("")
   const [assignOpen, setAssignOpen] = React.useState(false)
   const [selectedDealers, setSelectedDealers] = React.useState<string[]>([])
+
+  const loadEnquiry = React.useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const [data, dealerList] = await Promise.all([getAdminEnquiryDetail(id), getAdminDealers()])
+      setEnquiry(data)
+      setDealers(dealerList)
+      setSelectedDealers(data ? [data.seller?.id].filter(Boolean) as string[] : [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load enquiry")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [id])
+
+  React.useEffect(() => {
+    loadEnquiry()
+  }, [loadEnquiry])
+
+  const handleStatusChange = async (newStatus: EnquiryStatus) => {
+    if (!enquiry) return
+    try {
+      await updateEnquiryStatus(enquiry.id, newStatus)
+      await loadEnquiry()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update status")
+    }
+  }
+
+  const handleAddNote = async () => {
+    if (!enquiry || !note.trim()) return
+    try {
+      await addEnquiryNote(enquiry.id, note.trim())
+      setNote("")
+      await loadEnquiry()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add note")
+    }
+  }
+
+  const openAssign = () => {
+    if (!enquiry) return
+    setSelectedDealers([enquiry.seller?.id].filter(Boolean) as string[])
+    setAssignOpen(true)
+  }
+
+  const handleAssign = async () => {
+    if (!enquiry) return
+    try {
+      const sellerId = selectedDealers[0] || null
+      await assignEnquirySeller(enquiry.id, sellerId)
+      setAssignOpen(false)
+      await loadEnquiry()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to assign dealer")
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 text-slate-500">
+        <p className="text-sm font-medium">Loading enquiry...</p>
+      </div>
+    )
+  }
 
   if (!enquiry) {
     return (
@@ -41,66 +118,15 @@ export function EnquiryDetail() {
     )
   }
 
-  const addTimeline = (action: string, actor = "Admin") => {
-    const now = new Date().toISOString()
-    setEnquiry((e) =>
-      e
-        ? {
-            ...e,
-            timeline: [...e.timeline, { id: Math.random().toString(36).slice(2), action, actor, timestamp: now }],
-            updated_at: now,
-          }
-        : null
-    )
-  }
-
-  const handleStatusChange = (status: EnquiryStatus) => {
-    setEnquiry((e) => (e ? { ...e, status } : null))
-    addTimeline(`Status changed to ${status}`)
-  }
-
-  const handleAddNote = () => {
-    if (!note.trim()) return
-    const now = new Date().toISOString()
-    setEnquiry((e) =>
-      e
-        ? {
-            ...e,
-            notes: [...e.notes, { id: Math.random().toString(36).slice(2), author: "Admin", text: note, timestamp: now }],
-            updated_at: now,
-          }
-        : null
-    )
-    setNote("")
-    addTimeline("Internal note added")
-  }
-
-  const openAssign = () => {
-    setSelectedDealers(enquiry.assigned_dealer_ids)
-    setAssignOpen(true)
-  }
-
-  const handleAssign = () => {
-    const action = selectedDealers.length > 0 ? `Assigned to ${selectedDealers.map(dealerName).join(", ")}` : "Unassigned"
-    setEnquiry((e) =>
-      e
-        ? {
-            ...e,
-            assigned_dealer_ids: selectedDealers,
-            status: selectedDealers.length > 0 ? "ASSIGNED" : "NEW",
-          }
-        : null
-    )
-    addTimeline(action)
-    setAssignOpen(false)
-  }
+  const buyerName = enquiry.buyer?.business_name || enquiry.buyer?.name || "—"
+  const notes = enquiry.timeline.filter((t) => t.note)
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{enquiry.id}</h1>
-          <p className="mt-1 text-sm text-slate-500">{enquiry.product_name}</p>
+          <p className="mt-1 text-sm text-slate-500">{enquiry.product?.title || "—"}</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge className={cn("text-xs capitalize", statusStyles[enquiry.status])}>{enquiry.status.toLowerCase()}</Badge>
@@ -113,6 +139,12 @@ export function EnquiryDetail() {
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="rounded-2xl border-slate-200 shadow-sm lg:col-span-2">
           <CardHeader className="pb-3">
@@ -122,12 +154,12 @@ export function EnquiryDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 pt-0 sm:grid-cols-2">
-            <Info label="Name" value={enquiry.customer_name} icon={User} />
-            <Info label="Phone" value={enquiry.phone} icon={Phone} />
-            <Info label="Email" value={enquiry.email} icon={Mail} />
-            <Info label="Business" value={enquiry.business_name} icon={Building2} />
-            <Info label="City" value={enquiry.city} icon={MapPin} />
-            <Info label="State" value={enquiry.state} icon={MapPin} />
+            <Info label="Name" value={enquiry.buyer?.name || "—"} icon={User} />
+            <Info label="Phone" value={enquiry.buyer?.phone || "—"} icon={Phone} />
+            <Info label="Email" value={enquiry.buyer?.email || "—"} icon={Mail} />
+            <Info label="Business" value={buyerName} icon={Building2} />
+            <Info label="City" value={enquiry.buyer?.city || "—"} icon={MapPin} />
+            <Info label="State" value={enquiry.buyer?.state || "—"} icon={MapPin} />
           </CardContent>
         </Card>
 
@@ -139,12 +171,12 @@ export function EnquiryDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-0">
-            <Info label="Product" value={enquiry.product_name} icon={Package} />
-            <Info label="Brand" value={enquiry.brand_name} icon={Hash} />
-            <Info label="Category" value={enquiry.category_name} icon={Hash} />
-            <Info label="Model" value={enquiry.model_name} icon={Hash} />
+            <Info label="Product" value={enquiry.product?.title || "—"} icon={Package} />
+            <Info label="Brand" value={enquiry.product?.brand || "—"} icon={Hash} />
+            <Info label="Category" value={enquiry.product?.category || "—"} icon={Hash} />
+            <Info label="Model" value={enquiry.product?.model || "—"} icon={Hash} />
             <Info label="Quantity" value={enquiry.quantity.toString()} icon={Hash} />
-            <Info label="Condition" value={enquiry.preferred_condition} icon={Clock} />
+            <Info label="Condition" value="—" icon={Clock} />
             <Info label="Priority" value={enquiry.priority} icon={Clock} />
           </CardContent>
         </Card>
@@ -158,16 +190,7 @@ export function EnquiryDetail() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 text-sm text-slate-700">
-          <p>{enquiry.message}</p>
-          {enquiry.attachments.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {enquiry.attachments.map((a) => (
-                <a key={a.id} href={a.url} className="rounded-lg bg-slate-50 px-3 py-1 text-sm text-blue-600 hover:underline">
-                  {a.name}
-                </a>
-              ))}
-            </div>
-          )}
+          <p>{enquiry.remarks || "—"}</p>
         </CardContent>
       </Card>
 
@@ -178,15 +201,20 @@ export function EnquiryDetail() {
           </CardHeader>
           <CardContent className="pt-0">
             <ul className="space-y-4">
-              {enquiry.timeline.map((t) => (
-                <li key={t.id} className="flex gap-3">
-                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{t.action}</p>
-                    <p className="text-xs text-slate-500">{t.actor} • {dateFormatter(t.timestamp, "long")}</p>
-                  </div>
-                </li>
-              ))}
+              {enquiry.timeline.length === 0 ? (
+                <p className="text-sm text-slate-500">No activity recorded.</p>
+              ) : (
+                enquiry.timeline.map((t) => (
+                  <li key={t.id} className="flex gap-3">
+                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900 capitalize">{t.status.toLowerCase()}</p>
+                      {t.note && <p className="text-sm text-slate-600">{t.note}</p>}
+                      <p className="text-xs text-slate-500">{t.actor} • {dateFormatter(t.timestamp, "long")}</p>
+                    </div>
+                  </li>
+                ))
+              )}
             </ul>
           </CardContent>
         </Card>
@@ -199,11 +227,11 @@ export function EnquiryDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-0">
-            {enquiry.notes.length === 0 ? <p className="text-sm text-slate-500">No notes.</p> : null}
-            {enquiry.notes.map((n) => (
+            {notes.length === 0 ? <p className="text-sm text-slate-500">No notes.</p> : null}
+            {notes.map((n) => (
               <div key={n.id} className="rounded-xl bg-slate-50 p-3 text-sm">
-                <p className="font-medium text-slate-900">{n.author}</p>
-                <p className="mt-1 text-slate-700">{n.text}</p>
+                <p className="font-medium text-slate-900">{n.actor}</p>
+                <p className="mt-1 text-slate-700">{n.note}</p>
                 <p className="mt-2 text-xs text-slate-400">{dateFormatter(n.timestamp, "long")}</p>
               </div>
             ))}
@@ -224,11 +252,11 @@ export function EnquiryDetail() {
           {enquiry.responses.map((r) => (
             <div key={r.id} className="rounded-xl border border-slate-200 p-4">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-slate-900">{r.dealer_name}</p>
-                <Badge className={cn("text-xs capitalize", statusStyles[r.status as EnquiryStatus] || "bg-slate-100 text-slate-700")}>{r.status.toLowerCase()}</Badge>
+                <p className="font-semibold text-slate-900">{r.dealer?.business_name || r.dealer?.name || "—"}</p>
+                <Badge className={cn("text-xs capitalize", statusStyles[r.status] || "bg-slate-100 text-slate-700")}>{r.status.toLowerCase()}</Badge>
               </div>
-              {r.price !== null && r.price !== undefined && <p className="mt-1 text-sm text-slate-700">Price: ₹{r.price}</p>}
-              {r.delivery_days && <p className="text-sm text-slate-700">Delivery: {r.delivery_days} days</p>}
+              {r.price !== null && r.price !== undefined && <p className="mt-1 text-sm text-slate-700">Price: {currencyFormatter(r.price)}</p>}
+              {r.delivery_days !== null && r.delivery_days !== undefined && <p className="text-sm text-slate-700">Delivery: {r.delivery_days} days</p>}
               {r.warranty && <p className="text-sm text-slate-700">Warranty: {r.warranty}</p>}
               {r.remarks && <p className="text-sm text-slate-600">{r.remarks}</p>}
               <p className="mt-2 text-xs text-slate-400">{dateFormatter(r.created_at, "long")}</p>
@@ -249,10 +277,10 @@ export function EnquiryDetail() {
         }
       >
         <div className="space-y-4">
-          {dealerOptions.map((d) => (
+          {dealers.map((d) => (
             <label key={d.id} className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
-              <Checkbox checked={selectedDealers.includes(d.id)} onCheckedChange={() => setSelectedDealers((prev) => (prev.includes(d.id) ? prev.filter((x) => x !== d.id) : [...prev, d.id]))} />
-              <span className="text-sm font-medium text-slate-700">{d.name}</span>
+              <Checkbox checked={selectedDealers.includes(d.id)} onCheckedChange={() => setSelectedDealers((prev) => (prev.includes(d.id) ? prev.filter((x) => x !== d.id) : [d.id]))} />
+              <span className="text-sm font-medium text-slate-700">{d.business_name || d.name}</span>
             </label>
           ))}
         </div>

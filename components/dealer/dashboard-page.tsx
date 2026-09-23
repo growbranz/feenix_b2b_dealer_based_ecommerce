@@ -5,8 +5,7 @@ import { DealerDashboardCard } from "./dashboard-card"
 import { DealerCharts } from "./charts"
 import { QuickActions } from "./quick-action"
 import { RecentProductsTable } from "./recent-products-table"
-import type { DashboardStats, ProductStatusData } from "@/lib/dealer/dashboard-service"
-import type { RecentProduct } from "@/lib/dealer/dashboard-service"
+import type { DashboardStats, ProductStatusData, MonthlyUpload, InventoryDatum, RecentProduct } from "@/lib/dealer/dashboard-service"
 import { formatINR } from "@/lib/dealer/dashboard-utils"
 import {
   Package,
@@ -21,9 +20,11 @@ interface DealerDashboardPageProps {
   stats: DashboardStats
   recentProducts: RecentProduct[]
   productStatusData: ProductStatusData[]
+  monthlyUploads: MonthlyUpload[]
+  inventoryByCategory: InventoryDatum[]
 }
 
-export function DealerDashboardPage({ stats, recentProducts, productStatusData }: DealerDashboardPageProps) {
+export function DealerDashboardPage({ stats, recentProducts, productStatusData, monthlyUploads, inventoryByCategory }: DealerDashboardPageProps) {
   const dashboardStats = [
     {
       title: "Total Products",
@@ -75,7 +76,7 @@ export function DealerDashboardPage({ stats, recentProducts, productStatusData }
 
       <QuickActions />
 
-      <DealerCharts productStatusData={productStatusData} />
+      <DealerCharts productStatusData={productStatusData} monthlyUploads={monthlyUploads} inventoryByCategory={inventoryByCategory} />
 
       <RecentProductsTable recentProducts={recentProducts} />
     </div>

@@ -37,8 +37,8 @@ export function FilterSidebar({
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  const [selectedCategories, setSelectedCategories] = React.useState<string[]>(
-    searchParams.get('category')?.split(',') || []
+  const [selectedCategory, setSelectedCategory] = React.useState<string>(
+    searchParams.get('category') || ''
   )
   const [selectedBrands, setSelectedBrands] = React.useState<string[]>(
     searchParams.get('brand')?.split(',') || []
@@ -49,15 +49,15 @@ export function FilterSidebar({
   ])
 
   const updateURL = (updates: {
-    categories?: string[]
+    category?: string
     brands?: string[]
     price?: number[]
   }) => {
     const params = new URLSearchParams(searchParams.toString())
     
-    if (updates.categories !== undefined) {
-      if (updates.categories.length > 0) {
-        params.set('category', updates.categories.join(','))
+    if (updates.category !== undefined) {
+      if (updates.category) {
+        params.set('category', updates.category)
       } else {
         params.delete('category')
       }
@@ -77,15 +77,26 @@ export function FilterSidebar({
     }
     
     params.delete('page') // Reset to page 1 on filter change
-    router.push(`/products?${params.toString()}`)
+    const newUrl = `/products?${params.toString()}`
+    
+    // Prevent navigation to same URL
+    if (window.location.search === `?${params.toString()}`) {
+      return
+    }
+    
+    console.log("[FILTER SIDEBAR] URL UPDATE", {
+      source: "filter-change",
+      currentUrl: window.location.search,
+      nextUrl: `?${params.toString()}`
+    })
+    
+    router.push(newUrl)
   }
 
-  const handleCategoryToggle = (categoryId: string) => {
-    const newCategories = selectedCategories.includes(categoryId)
-      ? selectedCategories.filter((id) => id !== categoryId)
-      : [...selectedCategories, categoryId]
-    setSelectedCategories(newCategories)
-    updateURL({ categories: newCategories })
+  const handleCategoryToggle = (categorySlug: string) => {
+    const newCategory = selectedCategory === categorySlug ? '' : categorySlug
+    setSelectedCategory(newCategory)
+    updateURL({ category: newCategory })
   }
 
   const handleBrandToggle = (brandId: string) => {
@@ -102,7 +113,7 @@ export function FilterSidebar({
   }
 
   const handleClearFilters = () => {
-    setSelectedCategories([])
+    setSelectedCategory('')
     setSelectedBrands([])
     setPrice([priceRange?.min || 0, priceRange?.max || 1000])
     
@@ -134,7 +145,7 @@ export function FilterSidebar({
                   <div key={option.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`category-${option.id}`}
-                      checked={selectedCategories.includes(option.id)}
+                      checked={selectedCategory === option.id}
                       onCheckedChange={() => handleCategoryToggle(option.id)}
                     />
                     <Label

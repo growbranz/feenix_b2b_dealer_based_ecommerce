@@ -3,6 +3,7 @@ import { Inter, Poppins } from 'next/font/google'
 import '../globals.css'
 import { WebsiteNavbar } from '@/components/website/website-navbar'
 import { WebsiteFooter } from '@/components/website/website-footer'
+import { getNavbarCategories } from '@/components/website/navbar-categories'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const poppins = Poppins({ 
@@ -16,14 +17,16 @@ export const metadata: Metadata = {
   description: 'B2B marketplace for repair services and parts',
 }
 
-export default function WebsiteLayout({
+export default async function WebsiteLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const categories = await getNavbarCategories()
+
   return (
     <div className={`${inter.variable} ${poppins.variable} min-h-screen flex flex-col font-sans`}>
-      <WebsiteNavbar />
+      <WebsiteNavbar categories={categories} />
       <main className="flex-1 pt-24 md:pt-28">{children}</main>
       <WebsiteFooter />
     </div>

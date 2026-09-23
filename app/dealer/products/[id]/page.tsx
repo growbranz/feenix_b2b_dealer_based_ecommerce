@@ -112,6 +112,8 @@ export default function ProductDetailPage() {
         throw new Error("You must be logged in to update this product")
       }
 
+      console.log("PRODUCT UPDATE START", { productId, hasImages: data.images?.length > 0 })
+
       const updatePayload = {
         category_id: data.category_id,
         brand_id: data.brand_id,
@@ -138,6 +140,106 @@ export default function ProductDetailPage() {
         throw error
       }
 
+      console.log("PRODUCT UPDATE FIELDS SUCCESS", { productId })
+
+      // Handle images - sync with database
+      if (data.images) {
+        console.log("PRODUCT IMAGES SYNC START", {
+          productId,
+          newImageCount: data.images.length,
+        })
+
+        // Get existing images
+        const { data: existingImages, error: existingError } = await supabase
+          .from("product_images")
+          .select("id, image_url")
+          .eq("product_id", productId)
+
+        if (existingError) {
+          console.error("PRODUCT IMAGES: Failed to fetch existing images", existingError)
+        } else {
+          console.log("PRODUCT IMAGES: Existing images", {
+            productId,
+            existingCount: existingImages?.length || 0,
+          })
+
+          // Remove images that are no longer in the form
+          const existingUrls = existingImages?.map((img: any) => img.image_url) || []
+          const newUrls = data.images
+          
+          const toRemove = existingUrls.filter((url: string) => !newUrls.includes(url))
+          
+          if (toRemove.length > 0) {
+            console.log("PRODUCT IMAGES: Removing old images", {
+              productId,
+              removeCount: toRemove.length,
+            })
+
+            // Remove from database
+            const { error: removeError } = await supabase
+              .from("product_images")
+              .delete()
+              .in("image_url", toRemove)
+
+            if (removeError) {
+              console.error("PRODUCT IMAGES: Failed to remove from database", removeError)
+            }
+
+            // Remove from Storage
+            for (const url of toRemove) {
+              if (url.includes("/product-images/")) {
+                try {
+                  const path = url.split("/product-images/")[1].split("?")[0]
+                  await supabase.storage.from("product-images").remove([path])
+                  console.log("PRODUCT IMAGES: Removed from Storage", { path })
+                } catch (storageError) {
+                  console.error("PRODUCT IMAGES: Failed to remove from Storage", storageError)
+                }
+              }
+            }
+          }
+
+          // Add new images
+          const toAdd = newUrls.filter((url: string) => !existingUrls.includes(url))
+          
+          if (toAdd.length > 0) {
+            console.log("PRODUCT IMAGES: Adding new images", {
+              productId,
+              addCount: toAdd.length,
+            })
+
+            const newImagePayloads = toAdd.map((url: string, index: number) => ({
+              product_id: productId,
+              image_url: url,
+              display_order: existingUrls.length + index,
+            }))
+
+            const { error: insertError } = await supabase
+              .from("product_images")
+              .insert(newImagePayloads)
+
+            if (insertError) {
+              console.error("PRODUCT IMAGES: Failed to insert new images", insertError)
+              throw new Error(`Failed to save product images: ${insertError.message}`)
+            }
+          }
+
+          // Update display order for all images
+          for (const [index, url] of data.images.entries()) {
+            await (supabase
+              .from("product_images") as any)
+              .update({ display_order: index })
+              .eq("product_id", productId)
+              .eq("image_url", url)
+          }
+
+          console.log("PRODUCT IMAGES SYNC SUCCESS", {
+            productId,
+            finalImageCount: data.images.length,
+          })
+        }
+      }
+
       const originalStock = Math.max(0, Number.parseInt(String(product?.stock ?? 0), 10) || 0)
       const newStock = Math.max(0, Number.parseInt(String(data.stock ?? 0), 10) || 0)
       if (product && originalStock !== newStock) {
@@ -152,7 +254,7 @@ export default function ProductDetailPage() {
         })
       }
 
-      console.log("Product updated:", updated)
+      console.log("PRODUCT UPDATE COMPLETE SUCCESS", { productId })
       alert("Product updated successfully!")
       router.push("/dealer/products")
       router.refresh()
@@ -283,9 +385,10 @@ export default function ProductDetailPage() {
           categories={options.categories}
           brands={options.brands}
           models={options.models}
-          isLoading={false}
+          isLoading={isLoading}
           initialValues={initialValues}
           mode="edit"
+          productId={productId}
         />
       </motion.div>
     </div>

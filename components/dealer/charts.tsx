@@ -17,8 +17,8 @@ import {
   Bar,
   Legend,
 } from "recharts"
-import { monthlyUploads, inventoryData, CHART_COLORS } from "./data"
-import type { ProductStatusData } from "@/lib/dealer/dashboard-service"
+import { CHART_COLORS } from "./data"
+import type { ProductStatusData, MonthlyUpload, InventoryDatum } from "@/lib/dealer/dashboard-service"
 
 const colors = [
   CHART_COLORS.primary,
@@ -38,9 +38,11 @@ const tooltipStyle = {
 
 interface DealerChartsProps {
   productStatusData: ProductStatusData[]
+  monthlyUploads: MonthlyUpload[]
+  inventoryByCategory: InventoryDatum[]
 }
 
-export function DealerCharts({ productStatusData }: DealerChartsProps) {
+export function DealerCharts({ productStatusData, monthlyUploads, inventoryByCategory }: DealerChartsProps) {
   return (
     <section className="grid gap-6 xl:grid-cols-3">
       {/* Monthly Uploads */}
@@ -145,29 +147,35 @@ export function DealerCharts({ productStatusData }: DealerChartsProps) {
             <CardTitle className="text-base font-semibold">Inventory by Category</CardTitle>
           </CardHeader>
           <CardContent className="h-[calc(100%-4rem)]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={inventoryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis
-                  dataKey="category"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar
-                  dataKey="stock"
-                  fill={CHART_COLORS.primary}
-                  radius={[8, 8, 0, 0]}
-                  name="Stock"
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            {inventoryByCategory.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={inventoryByCategory} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis
+                    dataKey="category"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar
+                    dataKey="stock"
+                    fill={CHART_COLORS.primary}
+                    radius={[8, 8, 0, 0]}
+                    name="Stock"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                No inventory data available yet
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>

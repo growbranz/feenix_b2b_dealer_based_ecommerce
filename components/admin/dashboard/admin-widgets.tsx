@@ -5,17 +5,54 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { mockLogs } from "@/components/admin/activity/data"
-import { mockDealers } from "@/components/admin/dealers/data"
-import { mockProducts } from "@/components/admin/products/data"
+import { getPendingApprovals, getLowStockProducts } from "@/lib/admin/dashboard-service"
 import { dateFormatter } from "@/lib/utils"
 import { Activity, Clock, AlertTriangle, Package, Users } from "lucide-react"
 
 export function AdminWidgets() {
-  const recentLogs = React.useMemo(() => [...mockLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5), [])
-  const pendingDealers = mockDealers.filter((d) => d.status === "PENDING")
-  const pendingProducts = mockProducts.filter((p) => p.status === "PENDING")
-  const lowStock = mockProducts.filter((p) => p.stock < 20)
+  const [pendingApprovals, setPendingApprovals] = React.useState({ pendingDealers: 0, pendingProducts: 0 })
+  const [lowStockProducts, setLowStockProducts] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    async function loadData() {
+      try {
+        const [approvals, lowStock] = await Promise.all([
+          getPendingApprovals(),
+          getLowStockProducts(5),
+        ])
+        setPendingApprovals(approvals)
+        setLowStockProducts(lowStock)
+      } catch (error) {
+        console.error("Error loading widget data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="grid gap-6 lg:grid-cols-3">
+        {[...Array(3)].map((_, index) => (
+          <Card key={index} className="rounded-2xl border-slate-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="h-6 w-32 bg-slate-100 rounded animate-pulse" />
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-12 bg-slate-100 rounded animate-pulse" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -27,17 +64,7 @@ export function AdminWidgets() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ul className="space-y-3">
-            {recentLogs.map((log) => (
-              <li key={log.id} className="flex items-start gap-3 text-sm">
-                <Clock className="mt-0.5 h-4 w-4 text-slate-400" />
-                <div>
-                  <p className="font-medium text-slate-900">{log.action}</p>
-                  <p className="text-xs text-slate-500">{dateFormatter(log.timestamp, "long")}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <p className="text-sm text-slate-500 text-center py-4">See Recent Activities panel</p>
           <Link href="/admin/activity">
             <Button variant="ghost" size="sm" className="mt-4">View all</Button>
           </Link>
@@ -57,14 +84,14 @@ export function AdminWidgets() {
               <Users className="h-5 w-5 text-slate-500" />
               <span className="text-sm font-medium text-slate-700">Dealers</span>
             </div>
-            <Badge variant="secondary">{pendingDealers.length}</Badge>
+            <Badge variant="secondary">{pendingApprovals.pendingDealers}</Badge>
           </div>
           <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
             <div className="flex items-center gap-3">
               <Package className="h-5 w-5 text-slate-500" />
               <span className="text-sm font-medium text-slate-700">Products</span>
             </div>
-            <Badge variant="secondary">{pendingProducts.length}</Badge>
+            <Badge variant="secondary">{pendingApprovals.pendingProducts}</Badge>
           </div>
           <Link href="/admin/dealers">
             <Button size="sm" className="w-full">Review Dealers</Button>
@@ -83,15 +110,18 @@ export function AdminWidgets() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ul className="space-y-3">
-            {lowStock.slice(0, 5).map((p) => (
-              <li key={p.id} className="flex items-center justify-between text-sm">
-                <span className="text-slate-700">{p.title}</span>
-                <Badge className="bg-rose-100 text-rose-700">{p.stock} left</Badge>
-              </li>
-            ))}
-          </ul>
-          {lowStock.length === 0 && <p className="text-sm text-slate-500">No low stock products.</p>}
+          {lowStockProducts.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">No low stock products</p>
+          ) : (
+            <ul className="space-y-3">
+              {lowStockProducts.map((p) => (
+                <li key={p.id} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-700">{p.title}</span>
+                  <Badge className="bg-rose-100 text-rose-700">{p.stock} left</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

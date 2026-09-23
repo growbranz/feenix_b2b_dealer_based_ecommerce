@@ -24,6 +24,9 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import type { MarketplaceStat } from "@/types"
+import { getIconComponent } from "@/lib/marketplace-stats/service"
+import * as LucideIcons from "lucide-react"
 
 interface FeatureCardProps {
   children: React.ReactNode
@@ -309,8 +312,62 @@ const trustMetrics = [
   { value: 24, suffix: "/7", label: "Marketplace Support", icon: Headphones },
 ]
 
-export function FeatureShowcase() {
+interface DynamicAnimatedStatProps {
+  stat: MarketplaceStat
+  delay: number
+  reduced: boolean
+}
+
+function DynamicAnimatedStat({ stat, delay, reduced }: DynamicAnimatedStatProps) {
+  const ref = React.useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true, margin: "-50px" })
+  
+  // Parse value to extract number and suffix
+  const parseValue = (value: string) => {
+    const match = value.match(/^([\d.]+)(.*)$/)
+    if (match) {
+      const num = parseFloat(match[1])
+      const suffix = match[2]
+      return { num, suffix }
+    }
+    return { num: 0, suffix: value }
+  }
+  
+  const { num: target, suffix } = parseValue(stat.value)
+  const count = useCountUp(target, isInView, reduced)
+  const display = Number.isInteger(target) ? count.toLocaleString() : count.toFixed(1)
+  
+  const IconComponent = (LucideIcons as any)[getIconComponent(stat.icon)] || Package
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay: reduced ? 0 : delay * 0.1, ease: "easeOut" }}
+      className="flex flex-col items-center text-center"
+    >
+      <IconComponent className="h-5 w-5 text-blue-600 mb-2" aria-hidden="true" />
+      <div className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+        {display}{suffix}
+      </div>
+      <div className="mt-1 text-sm font-medium text-slate-600">{stat.label}</div>
+    </motion.div>
+  )
+}
+
+interface FeatureShowcaseProps {
+  marketplaceStats?: MarketplaceStat[]
+}
+
+export function FeatureShowcase({ marketplaceStats }: FeatureShowcaseProps) {
   const reduced = useReducedMotion() ?? false
+  
+  // Use dynamic stats if provided, otherwise fall back to hardcoded
+  const statsToDisplay = marketplaceStats && marketplaceStats.length > 0 
+    ? marketplaceStats 
+    : trustMetrics
 
   return (
     <section
@@ -486,17 +543,33 @@ export function FeatureShowcase() {
           className="mt-14 rounded-3xl bg-white/80 border border-slate-100 shadow-sm p-6 lg:p-8"
         >
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 lg:gap-4">
-            {trustMetrics.map((metric, index) => (
-              <AnimatedStat
-                key={metric.label}
-                value={metric.value}
-                suffix={metric.suffix}
-                label={metric.label}
-                icon={metric.icon}
-                delay={index}
-                reduced={reduced}
-              />
-            ))}
+            {statsToDisplay.map((stat, index) => {
+              // Check if this is a MarketplaceStat (dynamic) or hardcoded stat
+              if ('id' in stat) {
+                return (
+                  <DynamicAnimatedStat
+                    key={stat.id}
+                    stat={stat as MarketplaceStat}
+                    delay={index}
+                    reduced={reduced}
+                  />
+                )
+              } else {
+                // Fallback to hardcoded stats
+                const metric = stat as { value: number; suffix: string; label: string; icon: any }
+                return (
+                  <AnimatedStat
+                    key={metric.label}
+                    value={metric.value}
+                    suffix={metric.suffix}
+                    label={metric.label}
+                    icon={metric.icon}
+                    delay={index}
+                    reduced={reduced}
+                  />
+                )
+              }
+            })}
           </div>
         </motion.div>
 

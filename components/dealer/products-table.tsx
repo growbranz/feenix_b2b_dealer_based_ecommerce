@@ -31,14 +31,18 @@ import type { RecentProduct, RecentProductStatus } from "./types"
 
 const statusVariant = (status: RecentProductStatus) => {
   switch (status) {
-    case "ACTIVE":
+    case "DRAFT":
+      return "bg-slate-500/10 text-slate-600 hover:bg-slate-500/20"
+    case "PENDING_APPROVAL":
+      return "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
+    case "APPROVED":
       return "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
+    case "REJECTED":
+      return "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
     case "INACTIVE":
       return "bg-slate-500/10 text-slate-600 hover:bg-slate-500/20"
-    case "OUT_OF_STOCK":
-      return "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
-    case "PENDING":
-      return "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
+    case "SUSPENDED":
+      return "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20"
     default:
       return "bg-muted text-muted-foreground"
   }

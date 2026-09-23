@@ -18,11 +18,12 @@ import {
   Bar,
 } from "recharts"
 import {
-  monthlyDealerRegistrations,
-  productApprovalData,
-  ordersOverviewData,
-  ADMIN_CHART_COLORS,
-} from "./data"
+  getMonthlyDealerRegistrations,
+  getProductApprovalData,
+  getOrdersOverviewData,
+} from "@/lib/admin/dashboard-service"
+import { ADMIN_CHART_COLORS } from "./data"
+import { useEffect, useState } from "react"
 
 const tooltipStyle = {
   backgroundColor: "hsl(var(--card))",
@@ -38,6 +39,57 @@ const colors = [
 ]
 
 export function AdminCharts() {
+  const [monthlyRegistrations, setMonthlyRegistrations] = useState<any[]>([])
+  const [productApproval, setProductApproval] = useState<any[]>([])
+  const [ordersOverview, setOrdersOverview] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadChartData() {
+      try {
+        const [registrations, approval, orders] = await Promise.all([
+          getMonthlyDealerRegistrations(),
+          getProductApprovalData(),
+          getOrdersOverviewData(),
+        ])
+        setMonthlyRegistrations(registrations)
+        setProductApproval(approval)
+        setOrdersOverview(orders)
+      } catch (error) {
+        console.error("Error loading chart data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadChartData()
+  }, [])
+
+  if (loading) {
+    return (
+      <section className="grid gap-6 xl:grid-cols-3">
+        {[...Array(3)].map((_, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 + index * 0.1, ease: [0.4, 0, 0.2, 1] }}
+            className={index === 2 ? "xl:col-span-3" : "xl:col-span-2"}
+          >
+            <Card className="h-[380px] rounded-2xl border-slate-200 shadow-sm">
+              <CardHeader className="pb-2">
+                <div className="h-6 w-40 bg-slate-100 rounded animate-pulse" />
+              </CardHeader>
+              <CardContent className="h-[calc(100%-4rem)]">
+                <div className="h-full bg-slate-100 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </section>
+    )
+  }
+
   return (
     <section className="grid gap-6 xl:grid-cols-3">
       <motion.div
@@ -55,7 +107,7 @@ export function AdminCharts() {
           <CardContent className="h-[calc(100%-4rem)]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={monthlyDealerRegistrations}
+                data={monthlyRegistrations}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <defs>
@@ -104,7 +156,7 @@ export function AdminCharts() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={productApprovalData}
+                  data={productApproval}
                   cx="50%"
                   cy="45%"
                   innerRadius={60}
@@ -112,7 +164,7 @@ export function AdminCharts() {
                   paddingAngle={4}
                   dataKey="value"
                 >
-                  {productApprovalData.map((entry, index) => (
+                  {productApproval.map((entry, index) => (
                     <Cell key={`cell-${entry.name}`} fill={colors[index % colors.length]} />
                   ))}
                 </Pie>
@@ -143,7 +195,7 @@ export function AdminCharts() {
           </CardHeader>
           <CardContent className="h-[calc(100%-4rem)]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ordersOverviewData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={ordersOverview} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis
                   dataKey="month"

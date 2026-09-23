@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/shared/empty-state"
-import { getInventoryItems, getInventoryStats } from "@/lib/inventory/data"
+import { getInventoryItems, getInventoryStats, getInventoryMovementSummary } from "@/lib/inventory/data"
 import { cn, currencyFormatter, dateFormatter } from "@/lib/utils"
 import type { InventoryStats, PaginatedResult, InventoryListItem } from "@/types/inventory"
 
@@ -67,20 +67,17 @@ function statusBarColor(status: string) {
   }
 }
 
-function AreaChart({ color, className }: { color: string; className?: string }) {
-  const points = [
-    { x: 0, y: 42 },
-    { x: 20, y: 30 },
-    { x: 40, y: 36 },
-    { x: 60, y: 24 },
-    { x: 80, y: 28 },
-    { x: 100, y: 20 },
-    { x: 120, y: 26 },
-    { x: 140, y: 18 },
-    { x: 160, y: 22 },
-    { x: 180, y: 14 },
-    { x: 200, y: 18 },
-  ]
+function AreaChart({ color, className, movementData }: { color: string; className?: string; movementData?: { date: string; in: number; out: number }[] }) {
+  const points = movementData && movementData.length > 0
+    ? movementData.map((d, i) => {
+        const x = (i / (movementData.length - 1)) * 200
+        const total = d.in + d.out
+        const maxTotal = Math.max(...movementData.map((m) => m.in + m.out), 1)
+        const y = 60 - (total / maxTotal) * 50
+        return { x, y }
+      })
+    : [{ x: 0, y: 30 }, { x: 200, y: 30 }]
+
   const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
   const area = `M 0 60 L 0 ${points[0].y} ${points.slice(1).map((p) => `L ${p.x} ${p.y}`).join(' ')} L 200 60 Z`
   return (
@@ -102,6 +99,7 @@ function MetricCard({
   valueClassName = "text-3xl font-bold tracking-tight leading-none",
   chartClassName = "h-8",
   className,
+  movementData,
 }: {
   label: string
   value: React.ReactNode
@@ -112,6 +110,7 @@ function MetricCard({
   valueClassName?: string
   chartClassName?: string
   className?: string
+  movementData?: { date: string; in: number; out: number }[]
 }) {
   const chartColor = iconColor.replace("bg-", "text-")
   return (
@@ -132,7 +131,7 @@ function MetricCard({
           </div>
         </div>
         <div className={cn("w-full", chartClassName)}>
-          <AreaChart color={chartColor} />
+          <AreaChart color={chartColor} movementData={movementData} />
         </div>
       </CardContent>
     </Card>
@@ -147,6 +146,7 @@ export function InventoryDashboard({
 }: InventoryDashboardProps) {
   const [stats, setStats] = React.useState<InventoryStats>(initialStats)
   const [itemsResult, setItemsResult] = React.useState<PaginatedResult<InventoryListItem>>(initialItems)
+  const [movementData, setMovementData] = React.useState<{ date: string; in: number; out: number }[]>([])
   const [loading, setLoading] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [status, setStatus] = React.useState("all")
@@ -174,9 +174,25 @@ export function InventoryDashboard({
     }
   }, [search, status, page, dealerId])
 
+  React.useEffect(() => {
+    let cancelled = false
+    async function loadMovement() {
+      const data = await getInventoryMovementSummary(14)
+      if (!cancelled) {
+        setMovementData(data)
+      }
+    }
+    loadMovement()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   async function refreshStats() {
     const next = await getInventoryStats({ dealerId })
     setStats(next)
+    const movement = await getInventoryMovementSummary(14)
+    setMovementData(movement)
   }
 
   function nextPage() {
@@ -201,6 +217,7 @@ export function InventoryDashboard({
           icon={Boxes}
           iconColor="bg-slate-500"
           tint="bg-slate-50/70 border-slate-200"
+          movementData={movementData}
         />
         <MetricCard
           label="Available Stock"
@@ -209,6 +226,7 @@ export function InventoryDashboard({
           icon={Package}
           iconColor="bg-emerald-500"
           tint="bg-emerald-50/60 border-emerald-200"
+          movementData={movementData}
         />
         <MetricCard
           label="Reserved Stock"
@@ -217,6 +235,7 @@ export function InventoryDashboard({
           icon={TrendingUp}
           iconColor="bg-amber-500"
           tint="bg-amber-50/60 border-amber-200"
+          movementData={movementData}
         />
         <MetricCard
           label="Alerts"
@@ -225,6 +244,7 @@ export function InventoryDashboard({
           icon={AlertTriangle}
           iconColor="bg-rose-500"
           tint="bg-rose-50/60 border-rose-200"
+          movementData={movementData}
         />
       </div>
 
@@ -240,6 +260,7 @@ export function InventoryDashboard({
           className="lg:col-span-2 h-44"
           chartClassName="h-14"
           tint="bg-emerald-50/60 border-emerald-200"
+          movementData={movementData}
         />
         <MetricCard
           label="Reserved Value"
@@ -250,6 +271,7 @@ export function InventoryDashboard({
           valueClassName="text-3xl font-bold tracking-tight leading-none text-amber-600"
           chartClassName="h-10"
           tint="bg-amber-50/60 border-amber-200"
+          movementData={movementData}
         />
         <MetricCard
           label="Today's Movement"
@@ -259,6 +281,7 @@ export function InventoryDashboard({
           iconColor="bg-blue-500"
           chartClassName="h-10"
           tint="bg-blue-50/60 border-blue-200"
+          movementData={movementData}
         />
       </div>
 

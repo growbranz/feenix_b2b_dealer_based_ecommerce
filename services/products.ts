@@ -43,9 +43,30 @@ export async function getProducts(params: ProductSearchParams = {}) {
     query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
   }
 
-  // Category filter
+  // Category filter - handle both slug and ID
   if (category) {
-    query = query.eq('category_id', category)
+    // Check if category is a UUID or a slug
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(category)
+    
+    if (isUuid) {
+      // Filter by category ID
+      query = query.eq('category_id', category)
+    } else {
+      // Resolve slug to category ID
+      const { data: categoryData } = await (supabase
+        .from('categories')
+        .select('id')
+        .eq('slug', category)
+        .eq('status', 'ACTIVE')
+        .single() as any)
+      
+      if (categoryData && categoryData.id) {
+        query = query.eq('category_id', categoryData.id)
+      } else {
+        // Invalid slug - return no results
+        return { products: [], pagination: createPaginationMeta(0, page, limit) }
+      }
+    }
   }
 
   // Brand filter
@@ -78,6 +99,9 @@ export async function getProducts(params: ProductSearchParams = {}) {
     query = query.eq('stock', 0)
   }
 
+  // Note: Dealer verification filtering is handled at the application level
+  // or should be done via proper relationship filters if needed
+
   // Sorting
   switch (sortBy) {
     case 'newest':
@@ -106,7 +130,12 @@ export async function getProducts(params: ProductSearchParams = {}) {
   const { data: products, error, count } = await query
 
   if (error) {
-    console.error('Error fetching products:', error)
+    console.error('Error fetching products:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    })
     return { products: [], pagination: createPaginationMeta(0, page, limit) }
   }
 
@@ -151,13 +180,21 @@ export async function getProductBySlug(slug: string) {
     .maybeSingle()
 
   if (error) {
-    console.error('Error fetching product:', error)
+    console.error('Error fetching product:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    })
     return null
   }
 
   if (!product) {
     return null
   }
+
+  // Note: Dealer verification check can be added here if needed
+  // Currently allowing all active products regardless of dealer status
 
   // Transform data to include primary_image
   const images = (product as any).images || []
@@ -189,7 +226,7 @@ export async function getFilterOptions(): Promise<FilterOptions> {
     .eq('status', 'ACTIVE')
     .order('name')
 
-  // Get price range
+  // Get price range from active products only
   const { data: priceData } = await supabase
     .from('products')
     .select('price')
@@ -236,7 +273,12 @@ export async function getRelatedProducts(productId: string, categoryId: string, 
     .limit(limit)
 
   if (error) {
-    console.error('Error fetching related products:', error)
+    console.error('Error fetching related products:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    })
     return []
   }
 

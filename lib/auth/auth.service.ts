@@ -20,10 +20,26 @@ export const authService = {
         }
       }
 
+      // Fetch user profile to get role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      if (profileError || !profile) {
+        return {
+          success: false,
+          error: 'Failed to fetch user profile',
+        }
+      }
+
+      const profileData = profile as { role: string }
+
       return {
         success: true,
         message: 'Login successful',
-        data: data.user,
+        data: { ...data.user, role: profileData.role },
       }
     } catch (error) {
       return {

@@ -19,6 +19,7 @@ import { ProductsTable } from "@/components/dealer/products-table"
 import { ROUTES } from "@/constants/routes"
 import { createClient } from "@/lib/supabase/client"
 import { slugify } from "@/lib/utils"
+import { deleteProduct } from "@/lib/dealer/product-actions"
 import type { RecentProduct } from "@/components/dealer/types"
 
 export default function MyProductsPage() {
@@ -151,20 +152,10 @@ export default function MyProductsPage() {
   const handleDeleteConfirm = async () => {
     if (!productToDelete) return
     try {
-      const supabase = createClient()
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        throw new Error("You must be logged in to delete a product")
-      }
-
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", productToDelete.id)
-        .eq("dealer_id", user.id)
-
-      if (error) {
-        throw error
+      const result = await deleteProduct(productToDelete.id)
+      
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete product")
       }
 
       setIsDeleteOpen(false)

@@ -4,13 +4,15 @@ import * as React from "react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { Search, ChevronDown } from "lucide-react"
-import { statusOptions, stateOptions, businessTypeOptions } from "./data"
 
 interface DealerFiltersProps {
   search: string
   status: string
   state: string
   businessType: string
+  statusOptions: { value: string; label: string }[]
+  stateOptions: { value: string; label: string }[]
+  businessTypeOptions: { value: string; label: string }[]
   onSearchChange: (value: string) => void
   onStatusChange: (value: string) => void
   onStateChange: (value: string) => void
@@ -52,6 +54,9 @@ export function DealerFilters({
   status,
   state,
   businessType,
+  statusOptions,
+  stateOptions,
+  businessTypeOptions,
   onSearchChange,
   onStatusChange,
   onStateChange,

@@ -75,6 +75,8 @@ export interface Category {
   slug: string
   description: string | null
   image: string | null
+  icon: string | null
+  display_order: number
   status: ProductStatus
   created_at: string
   updated_at: string
@@ -118,6 +120,8 @@ export interface Product {
   warranty: string | null
   status: ProductStatus
   featured: boolean
+  premium: boolean
+  premium_display_order: number
   created_at: string
   updated_at: string
 }
@@ -366,9 +370,16 @@ export interface Banner {
   id: string
   title: string
   image: string
+  subtitle: string | null
+  cta_label: string | null
+  cta_link: string | null
   link: string | null
   display_order: number
   status: ProductStatus
+  start_date: string | null
+  end_date: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface FeaturedProduct {
@@ -386,6 +397,46 @@ export interface Setting {
   whatsapp: string | null
   logo: string | null
   favicon: string | null
+}
+
+export interface ActivityLog {
+  id: string
+  type: string
+  action: string
+  actor_id: string | null
+  actor_name: string | null
+  actor_role: string | null
+  target_type: string | null
+  target_id: string | null
+  target_name: string | null
+  metadata: Record<string, any>
+  created_at: string
+}
+
+export interface MarketplaceStat {
+  id: string
+  stat_key: string
+  value: string
+  label: string
+  icon: string | null
+  display_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Testimonial {
+  id: string
+  customer_name: string
+  customer_role: string | null
+  company_name: string | null
+  testimonial_text: string
+  avatar_url: string | null
+  rating: number
+  display_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
 // Database type for Supabase
@@ -509,8 +560,8 @@ export type Database = {
       }
       banners: {
         Row: Banner
-        Insert: Omit<Banner, 'id'>
-        Update: Partial<Banner>
+        Insert: Omit<Banner, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Banner, 'id' | 'created_at' | 'updated_at'>>
       }
       featured_products: {
         Row: FeaturedProduct
@@ -521,6 +572,21 @@ export type Database = {
         Row: Setting
         Insert: Omit<Setting, 'id'>
         Update: Partial<Setting>
+      }
+      activity_logs: {
+        Row: ActivityLog
+        Insert: Omit<ActivityLog, 'id' | 'created_at'>
+        Update: Partial<Omit<ActivityLog, 'id' | 'created_at'>>
+      }
+      marketplace_stats: {
+        Row: MarketplaceStat
+        Insert: Omit<MarketplaceStat, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<MarketplaceStat, 'id' | 'created_at'>>
+      }
+      testimonials: {
+        Row: Testimonial
+        Insert: Omit<Testimonial, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Testimonial, 'id' | 'created_at'>>
       }
     }
   }

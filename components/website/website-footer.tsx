@@ -99,7 +99,7 @@ export function WebsiteFooter() {
                 <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30 transition-colors">
                   <Phone className="h-5 w-5 text-blue-400" />
                 </div>
-                <span className="text-slate-300 group-hover:text-white transition-colors">+91 98765 43210</span>
+                <span className="text-slate-300 group-hover:text-white transition-colors">+91 86086 91445</span>
               </motion.div>
               <motion.div 
                 className="flex items-center gap-3 group"
@@ -108,7 +108,7 @@ export function WebsiteFooter() {
                 <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30 transition-colors">
                   <MapPin className="h-5 w-5 text-blue-400" />
                 </div>
-                <span className="text-slate-300 group-hover:text-white transition-colors">Mumbai, Maharashtra, India</span>
+                <span className="text-slate-300 group-hover:text-white transition-colors">Kaveripattinam, Krishnagiri, India</span>
               </motion.div>
             </div>
 

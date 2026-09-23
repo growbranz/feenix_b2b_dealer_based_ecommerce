@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createServerClient } from "@/lib/supabase/server"
 import { getCurrentUserProfile, requireAdmin } from "@/lib/auth/auth.helpers"
 import { notifyOnInventoryLow, notifyOnOutOfStock } from "@/lib/notifications/notifier"
+import { logActivity } from "@/lib/activity/service"
 import type { Inventory, InventoryTransfer } from "@/types"
 import type { StockAdjustmentInput, StockThresholdInput, InventoryTransferInput } from "@/lib/inventory/validations"
 
@@ -156,24 +157,19 @@ export async function adjustStock(input: StockAdjustmentInput) {
 
   const supabase: any = await createServerClient()
   const existing = await getInventoryRow(input.productId, input.dealerId, input.warehouseId)
+
   if (!existing) throw new Error("Inventory record not found")
 
-  const currentAvailable = existing.available_stock
-  const currentReserved = existing.reserved_stock
-  let newAvailable = currentAvailable
-
-  if (input.adjustmentType === "set") {
-    newAvailable = input.quantity
-  } else if (input.adjustmentType === "add") {
-    newAvailable = currentAvailable + input.quantity
+  let adjustment = 0
+  if (input.adjustmentType === "add") {
+    adjustment = input.quantity
   } else if (input.adjustmentType === "subtract") {
-    newAvailable = currentAvailable - input.quantity
+    adjustment = -input.quantity
+  } else if (input.adjustmentType === "set") {
+    adjustment = input.quantity - existing.available_stock
   }
 
-  if (newAvailable < 0) {
-    throw new Error("Insufficient stock for adjustment")
-  }
-
+  const newAvailable = Math.max(0, existing.available_stock + adjustment)
   const { error } = await supabase
     .from("inventory")
     .update({ available_stock: newAvailable })
@@ -183,25 +179,43 @@ export async function adjustStock(input: StockAdjustmentInput) {
 
   await insertLedger(
     input.productId,
-    currentAvailable,
+    existing.available_stock,
     newAvailable,
-    currentReserved,
-    currentReserved,
+    existing.reserved_stock,
+    existing.reserved_stock,
     input.movementType,
-    input.reason,
+    input.reason || "Stock adjustment",
     userProfile.user.id,
     input.dealerId,
     input.warehouseId
   )
 
   revalidatePath("/admin/inventory")
-  revalidatePath("/admin/inventory/history")
-  revalidatePath("/admin/inventory/adjustments")
   revalidatePath("/dealer/inventory")
   revalidatePath("/dealer/inventory/history")
 
+  const { data: product } = await supabase.from("products").select("title").eq("id", input.productId).single()
+
+  await logActivity({
+    type: "INVENTORY_ACTION",
+    action: `Adjusted stock by ${adjustment} units (${input.adjustmentType})`,
+    actor_id: userProfile.user.id,
+    actor_name: userProfile.profile?.name || userProfile.user.email,
+    actor_role: userProfile.profile?.role,
+    target_type: "inventory",
+    target_id: existing.id,
+    target_name: product?.title || "Unknown",
+    metadata: { 
+      adjustment,
+      adjustmentType: input.adjustmentType,
+      quantity: input.quantity,
+      movementType: input.movementType,
+      reason: input.reason,
+      new_available: newAvailable 
+    },
+  })
+
   try {
-    const { data: product } = await supabase.from("products").select("title").eq("id", input.productId).single()
     if (product) {
       const inventory = { ...existing, available_stock: newAvailable }
       if (newAvailable === 0) {
@@ -218,8 +232,7 @@ export async function adjustStock(input: StockAdjustmentInput) {
 }
 
 export async function updateStockThresholds(input: StockThresholdInput) {
-  await requireAdmin()
-
+  const { user, profile } = await requireAdmin()
   const supabase: any = await createServerClient()
   const existing = await getInventoryRow(input.productId, input.dealerId, input.warehouseId)
 
@@ -235,6 +248,24 @@ export async function updateStockThresholds(input: StockThresholdInput) {
     .eq("id", existing.id)
 
   if (error) throw error
+
+  const { data: product } = await supabase.from("products").select("title").eq("id", input.productId).single()
+
+  await logActivity({
+    type: "INVENTORY_ACTION",
+    action: "Updated stock thresholds",
+    actor_id: user.id,
+    actor_name: profile.name || user.email,
+    actor_role: profile.role,
+    target_type: "inventory",
+    target_id: existing.id,
+    target_name: product?.title || "Unknown",
+    metadata: { 
+      low_stock_limit: input.lowStockLimit,
+      critical_stock_limit: input.criticalStockLimit,
+      recommended_reorder_level: input.recommendedReorderLevel 
+    },
+  })
 
   revalidatePath("/admin/inventory")
   revalidatePath("/dealer/inventory")
@@ -276,7 +307,7 @@ export async function createTransfer(input: InventoryTransferInput) {
 }
 
 export async function approveTransfer(transferId: string) {
-  const { user } = await requireAdmin()
+  const { user, profile } = await requireAdmin()
   const supabase: any = await createServerClient()
 
   const { data: transfer, error: fetchError } = await supabase
@@ -296,6 +327,8 @@ export async function approveTransfer(transferId: string) {
   if (!source || source.available_stock < transfer.quantity) {
     throw new Error("Insufficient stock at source location")
   }
+
+  const { data: product } = await supabase.from("products").select("title").eq("id", transfer.product_id).single()
 
   // Move stock: source decreases, destination increases
   const dest = await getInventoryRow(
@@ -374,14 +407,33 @@ export async function approveTransfer(transferId: string) {
     )
   }
 
+  await logActivity({
+    type: "INVENTORY_ACTION",
+    action: `Approved inventory transfer of ${transfer.quantity} units`,
+    actor_id: user.id,
+    actor_name: profile.name || user.email,
+    actor_role: profile.role,
+    target_type: "inventory_transfer",
+    target_id: transferId,
+    target_name: product?.title || "Unknown",
+    metadata: { 
+      quantity: transfer.quantity,
+      from_dealer_id: transfer.from_dealer_id,
+      to_dealer_id: transfer.to_dealer_id 
+    },
+  })
+
   revalidatePath("/admin/inventory/transfers")
   revalidatePath("/admin/inventory")
   revalidatePath("/dealer/inventory")
 }
 
 export async function rejectTransfer(transferId: string) {
-  await requireAdmin()
+  const { user, profile } = await requireAdmin()
   const supabase: any = await createServerClient()
+
+  const { data: transfer } = await supabase.from("inventory_transfers").select("*").eq("id", transferId).single()
+  const { data: product } = await supabase.from("products").select("title").eq("id", transfer.product_id).single()
 
   const { error } = await supabase
     .from("inventory_transfers")
@@ -389,6 +441,21 @@ export async function rejectTransfer(transferId: string) {
     .eq("id", transferId)
 
   if (error) throw error
+
+  await logActivity({
+    type: "INVENTORY_ACTION",
+    action: "Rejected inventory transfer",
+    actor_id: user.id,
+    actor_name: profile.name || user.email,
+    actor_role: profile.role,
+    target_type: "inventory_transfer",
+    target_id: transferId,
+    target_name: product?.title || "Unknown",
+    metadata: { 
+      quantity: transfer?.quantity,
+      reason: transfer?.reason 
+    },
+  })
 
   revalidatePath("/admin/inventory/transfers")
 }

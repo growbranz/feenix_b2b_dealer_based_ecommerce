@@ -77,7 +77,7 @@ async function ProductsContent({ searchParams }: ProductsContentProps) {
     id: "categories",
     title: "Categories",
     options: filterOptions.categories.map(cat => ({
-      id: cat.id,
+      id: cat.slug,  // Use slug for URL compatibility
       label: cat.name
     }))
   }

@@ -50,14 +50,16 @@ export async function getCurrentProfile(userId: string): Promise<Profile | null>
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
     if (error) {
+      console.error('Error fetching profile:', error)
       return null
     }
 
     return data
   } catch (error) {
+    console.error('Error fetching profile:', error)
     return null
   }
 }
@@ -78,14 +80,16 @@ export async function getCurrentUserProfile(): Promise<{ user: User | null; prof
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (profileError) {
+      console.error('Error fetching profile:', profileError)
       return { user, profile: null }
     }
 
     return { user, profile }
   } catch (error) {
+    console.error('Error fetching user profile:', error)
     return { user: null, profile: null }
   }
 }
@@ -200,14 +204,16 @@ export async function getCurrentProfileClient(): Promise<Profile | null> {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
+      console.error('Error fetching profile:', error)
       return null
     }
 
     return data
   } catch (error) {
+    console.error('Error fetching profile:', error)
     return null
   }
 }

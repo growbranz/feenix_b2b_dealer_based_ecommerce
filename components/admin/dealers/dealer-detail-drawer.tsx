@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { dateFormatter } from "@/lib/utils"
 import type { AdminDealer } from "./data"
-import { mockActivities } from "./data"
 import { DealerStatusBadge } from "./status-badge"
 import {
   X,
@@ -31,7 +30,7 @@ interface DealerDetailDrawerProps {
 }
 
 export function DealerDetailDrawer({ dealer, onClose }: DealerDetailDrawerProps) {
-  const activities = dealer ? mockActivities[dealer.id] || [] : []
+  const activities: { id: string; action: string; timestamp: string; actor: string }[] = []
 
   return (
     <AnimatePresence>

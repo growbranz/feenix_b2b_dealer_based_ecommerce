@@ -23,13 +23,23 @@ export interface RecentProduct {
   model: string
   category: string
   stock: number
-  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "PENDING"
+  status: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "INACTIVE" | "SUSPENDED"
   created_at: string
 }
 
 export interface ProductStatusData {
   name: string
   value: number
+}
+
+export interface MonthlyUpload {
+  month: string
+  uploads: number
+}
+
+export interface InventoryDatum {
+  category: string
+  stock: number
 }
 
 /**
@@ -63,9 +73,9 @@ export async function getDealerDashboardStats(): Promise<DashboardStats> {
       .eq("dealer_id", dealerId)
 
     const totalProducts = products?.length || 0
-    const activeProducts = products?.filter((p: any) => p.status === "ACTIVE").length || 0
+    const activeProducts = products?.filter((p: any) => p.status === "APPROVED").length || 0
     const outOfStockProducts = products?.filter((p: any) => p.stock === 0).length || 0
-    const pendingApprovalProducts = products?.filter((p: any) => p.status === "PENDING").length || 0
+    const pendingApprovalProducts = products?.filter((p: any) => p.status === "PENDING_APPROVAL").length || 0
 
     // Get order statistics
     const { count: totalOrders, error: ordersError } = await supabase
@@ -229,4 +239,118 @@ export async function getDealerProductStatusData(): Promise<ProductStatusData[]>
     console.error("Error fetching product status data:", error)
     return []
   }
+}
+
+/**
+ * Get monthly product uploads for the authenticated dealer for the current year
+ */
+export async function getDealerMonthlyUploads(): Promise<MonthlyUpload[]> {
+  try {
+    const userProfile = await getCurrentUserProfile()
+    if (!userProfile?.profile?.id) {
+      return []
+    }
+
+    const dealerId = userProfile.profile.id
+    const supabase = await createServerClient()
+
+    const currentYear = new Date().getFullYear()
+    const startDate = new Date(currentYear, 0, 1).toISOString()
+    const endDate = new Date(currentYear, 11, 31, 23, 59, 59).toISOString()
+
+    const { data: products, error } = await supabase
+      .from("products")
+      .select("created_at")
+      .eq("dealer_id", dealerId)
+      .gte("created_at", startDate)
+      .lte("created_at", endDate)
+
+    if (error || !products) {
+      // Return all months with zero if no data
+      return getAllMonths().map(month => ({ month, uploads: 0 }))
+    }
+
+    // Group by month
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    const monthlyCounts = new Array(12).fill(0)
+
+    products.forEach((product: any) => {
+      const date = new Date(product.created_at)
+      if (date.getFullYear() === currentYear) {
+        const monthIndex = date.getMonth()
+        monthlyCounts[monthIndex]++
+      }
+    })
+
+    return monthNames.map((month, index) => ({
+      month,
+      uploads: monthlyCounts[index],
+    }))
+  } catch (error) {
+    console.error("Error fetching monthly uploads:", error)
+    return getAllMonths().map(month => ({ month, uploads: 0 }))
+  }
+}
+
+/**
+ * Get inventory by category for the authenticated dealer
+ */
+export async function getDealerInventoryByCategory(): Promise<InventoryDatum[]> {
+  try {
+    const userProfile = await getCurrentUserProfile()
+    if (!userProfile?.profile?.id) {
+      return []
+    }
+
+    const dealerId = userProfile.profile.id
+    const supabase = await createServerClient()
+
+    const { data: products, error } = await supabase
+      .from("products")
+      .select(`
+        stock,
+        category:categories(name, display_order)
+      `)
+      .eq("dealer_id", dealerId)
+
+    if (error || !products) {
+      return []
+    }
+
+    // Aggregate stock by category
+    const categoryStock = products.reduce((acc: any, product: any) => {
+      const categoryName = product.category?.name || "Unknown"
+      acc[categoryName] = (acc[categoryName] || 0) + (product.stock || 0)
+      return acc
+    }, {})
+
+    // Convert to array and sort by display_order if available, then by name
+    const categoryOrderMap = new Map()
+    products.forEach((product: any) => {
+      if (product.category?.name && product.category.display_order !== undefined) {
+        categoryOrderMap.set(product.category.name, product.category.display_order)
+      }
+    })
+
+    return Object.entries(categoryStock)
+      .map(([category, stock]) => ({
+        category,
+        stock: stock as number,
+      }))
+      .sort((a, b) => {
+        const orderA = categoryOrderMap.get(a.category) ?? 999
+        const orderB = categoryOrderMap.get(b.category) ?? 999
+        if (orderA !== orderB) {
+          return orderA - orderB
+        }
+        return a.category.localeCompare(b.category)
+      })
+  } catch (error) {
+    console.error("Error fetching inventory by category:", error)
+    return []
+  }
+}
+
+function getAllMonths(): string[] {
+  return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 }

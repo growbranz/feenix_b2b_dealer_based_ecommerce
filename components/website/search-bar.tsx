@@ -26,11 +26,24 @@ export function SearchBar({ placeholder = "Search products...", className }: Sea
         params.delete('search')
       }
       params.delete('page') // Reset to page 1 on new search
-      router.push(`/products?${params.toString()}`)
+      const newUrl = `/products?${params.toString()}`
+      
+      // Prevent navigation to same URL
+      if (window.location.search === `?${params.toString()}`) {
+        return
+      }
+      
+      console.log("[SEARCH BAR] URL UPDATE", {
+        source: "search-debounce",
+        currentUrl: window.location.search,
+        nextUrl: `?${params.toString()}`
+      })
+      
+      router.push(newUrl)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [query, router, searchParams])
+  }, [query, router])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

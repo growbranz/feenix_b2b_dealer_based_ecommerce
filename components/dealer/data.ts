@@ -1,4 +1,4 @@
-import type { DashboardStat, RecentProduct, MonthlyUpload, ProductStatusDatum, InventoryDatum, QuickActionItem } from "./types"
+import type { DashboardStat, RecentProduct, QuickActionItem } from "./types"
 import {
   Package,
   CheckCircle2,
@@ -66,7 +66,7 @@ export const recentProducts: RecentProduct[] = [
     model: "iPhone 14 Pro",
     category: "Displays",
     stock: 12,
-    status: "ACTIVE",
+    status: "APPROVED",
   },
   {
     id: "2",
@@ -76,7 +76,7 @@ export const recentProducts: RecentProduct[] = [
     model: "Galaxy S23 Ultra",
     category: "Batteries",
     stock: 0,
-    status: "OUT_OF_STOCK",
+    status: "INACTIVE",
   },
   {
     id: "3",
@@ -86,7 +86,7 @@ export const recentProducts: RecentProduct[] = [
     model: "OnePlus 11",
     category: "Ports",
     stock: 45,
-    status: "ACTIVE",
+    status: "APPROVED",
   },
   {
     id: "4",
@@ -96,7 +96,7 @@ export const recentProducts: RecentProduct[] = [
     model: "Xiaomi 13",
     category: "Cameras",
     stock: 8,
-    status: "PENDING",
+    status: "PENDING_APPROVAL",
   },
   {
     id: "5",
@@ -116,7 +116,7 @@ export const recentProducts: RecentProduct[] = [
     model: "GT Neo 3",
     category: "Displays",
     stock: 23,
-    status: "ACTIVE",
+    status: "APPROVED",
   },
   {
     id: "7",
@@ -126,38 +126,8 @@ export const recentProducts: RecentProduct[] = [
     model: "Find X6 Pro",
     category: "Batteries",
     stock: 7,
-    status: "PENDING",
+    status: "PENDING_APPROVAL",
   },
-]
-
-export const monthlyUploads: MonthlyUpload[] = [
-  { month: "Jan", uploads: 24 },
-  { month: "Feb", uploads: 32 },
-  { month: "Mar", uploads: 45 },
-  { month: "Apr", uploads: 38 },
-  { month: "May", uploads: 52 },
-  { month: "Jun", uploads: 48 },
-  { month: "Jul", uploads: 61 },
-  { month: "Aug", uploads: 55 },
-  { month: "Sep", uploads: 67 },
-  { month: "Oct", uploads: 72 },
-  { month: "Nov", uploads: 58 },
-  { month: "Dec", uploads: 84 },
-]
-
-export const productStatusData: ProductStatusDatum[] = [
-  { name: "Active", value: 287 },
-  { name: "Inactive", value: 36 },
-  { name: "Out of Stock", value: 21 },
-]
-
-export const inventoryData: InventoryDatum[] = [
-  { category: "Displays", stock: 156 },
-  { category: "Batteries", stock: 312 },
-  { category: "Ports", stock: 89 },
-  { category: "Cameras", stock: 64 },
-  { category: "Boards", stock: 48 },
-  { category: "Others", stock: 112 },
 ]
 
 export const quickActions: QuickActionItem[] = [

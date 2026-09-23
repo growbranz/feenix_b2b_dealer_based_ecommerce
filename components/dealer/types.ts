@@ -19,7 +19,7 @@ export interface DashboardStat {
   }
 }
 
-export type RecentProductStatus = "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "PENDING"
+export type RecentProductStatus = "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "INACTIVE" | "SUSPENDED"
 
 export interface RecentProduct {
   id: string

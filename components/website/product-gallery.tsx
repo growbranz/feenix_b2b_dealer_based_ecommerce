@@ -84,14 +84,14 @@ export function ProductGallery({ images, alt = "Product image", className }: Pro
               key={index}
               onClick={() => setCurrentIndex(index)}
               className={cn(
-                "flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all",
+                "flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all bg-slate-50 flex items-center justify-center",
                 index === currentIndex ? "border-blue-600 ring-2 ring-blue-600/20" : "border-transparent hover:border-blue-200 hover:ring-2 hover:ring-blue-200/30"
               )}
             >
               <img
                 src={image}
                 alt={`${alt} thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain p-2"
               />
             </button>
           ))}

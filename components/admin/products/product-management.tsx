@@ -10,28 +10,45 @@ import { FilterSelect } from "@/components/admin/shared/filter-select"
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog"
 import { ProductDetailDrawer } from "./product-detail-drawer"
 import { ProductApprovalDialog, ProductApprovalAction } from "./product-approval-dialog"
-import { mockProducts, AdminProduct, ProductStatus, formatCurrency } from "./data"
-import { mockBrands } from "@/components/admin/brands/data"
-import { mockCategories } from "@/components/admin/categories/data"
-import { mockDealers } from "@/components/admin/dealers/data"
-import { Plus, ChevronLeft, ChevronRight, Eye, CheckCircle2, XCircle, MessageSquare, Archive, Trash2 } from "lucide-react"
+import { formatCurrency } from "./data"
+import {
+  getAdminProducts,
+  getAdminBrands,
+  getAdminCategories,
+  getAdminDealers,
+  approveProduct,
+  rejectProduct,
+  suspendProduct,
+  deactivateProduct,
+  deleteProduct,
+  toggleProductFeatured,
+  bulkUpdateProductStatus,
+  bulkDeleteProducts,
+  type AdminProduct,
+} from "@/lib/admin/products-service"
+import { toggleProductPremium, testAction } from "@/lib/admin/actions/toggle-premium"
+import { Plus, ChevronLeft, ChevronRight, Eye, CheckCircle2, XCircle, Archive, Trash2, Power, Star, Diamond } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const PAGE_SIZE = 5
 
 const statusOptions: { value: string; label: string }[] = [
   { value: "all", label: "All Status" },
-  { value: "PENDING", label: "Pending" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "PENDING_APPROVAL", label: "Pending Approval" },
   { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
-  { value: "ARCHIVED", label: "Archived" },
+  { value: "INACTIVE", label: "Inactive" },
+  { value: "SUSPENDED", label: "Suspended" },
 ]
 
-const statusStyles: Record<ProductStatus, string> = {
-  PENDING: "bg-amber-100 text-amber-700",
+const statusStyles: Record<string, string> = {
+  DRAFT: "bg-slate-100 text-slate-700",
+  PENDING_APPROVAL: "bg-amber-100 text-amber-700",
   APPROVED: "bg-emerald-100 text-emerald-700",
   REJECTED: "bg-rose-100 text-rose-700",
-  ARCHIVED: "bg-slate-100 text-slate-700",
+  INACTIVE: "bg-slate-100 text-slate-700",
+  SUSPENDED: "bg-orange-100 text-orange-700",
 }
 
 interface PendingAction {
@@ -40,40 +57,89 @@ interface PendingAction {
 }
 
 export function ProductManagement() {
-  const [products, setProducts] = React.useState<AdminProduct[]>(mockProducts)
+  const [products, setProducts] = React.useState<AdminProduct[]>([])
+  const [totalProducts, setTotalProducts] = React.useState(0)
+  const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState("")
   const [brandFilter, setBrandFilter] = React.useState("all")
   const [categoryFilter, setCategoryFilter] = React.useState("all")
   const [dealerFilter, setDealerFilter] = React.useState("all")
   const [statusFilter, setStatusFilter] = React.useState("all")
   const [page, setPage] = React.useState(1)
+  const [totalPages, setTotalPages] = React.useState(1)
 
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
   const [detailId, setDetailId] = React.useState<string | null>(null)
   const [pendingAction, setPendingAction] = React.useState<PendingAction | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
 
-  const brandOptions = [{ value: "all", label: "All Brands" }, ...mockBrands.map((b) => ({ value: b.id, label: b.name }))]
-  const categoryOptions = [{ value: "all", label: "All Categories" }, ...mockCategories.map((c) => ({ value: c.id, label: c.name }))]
-  const dealerOptions = [{ value: "all", label: "All Dealers" }, ...mockDealers.map((d) => ({ value: d.id, label: d.business_name }))]
+  const [brandOptions, setBrandOptions] = React.useState<Array<{ value: string; label: string }>>([{ value: "all", label: "All Brands" }])
+  const [categoryOptions, setCategoryOptions] = React.useState<Array<{ value: string; label: string }>>([{ value: "all", label: "All Categories" }])
+  const [dealerOptions, setDealerOptions] = React.useState<Array<{ value: string; label: string }>>([{ value: "all", label: "All Dealers" }])
 
-  const filtered = React.useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return products
-      .filter((p) => {
-        const matchesSearch = !q || p.title.toLowerCase().includes(q)
-        const matchesBrand = brandFilter === "all" || p.brand_id === brandFilter
-        const matchesCategory = categoryFilter === "all" || p.category_id === categoryFilter
-        const matchesDealer = dealerFilter === "all" || p.dealer_id === dealerFilter
-        const matchesStatus = statusFilter === "all" || p.status === statusFilter
-        return matchesSearch && matchesBrand && matchesCategory && matchesDealer && matchesStatus
-      })
-      .sort((a, b) => a.title.localeCompare(b.title))
-  }, [products, search, brandFilter, categoryFilter, dealerFilter, statusFilter])
+  // Load initial data
+  React.useEffect(() => {
+    async function loadData() {
+      console.log("Admin Products Component - Starting initial data load")
+      setLoading(true)
+      try {
+        console.log("Admin Products Component - Fetching brands, categories, dealers")
+        const [brands, categories, dealers] = await Promise.all([
+          getAdminBrands(),
+          getAdminCategories(),
+          getAdminDealers(),
+        ])
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const currentPage = Math.min(page, pageCount)
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+        console.log("Admin Products Component - Filter options loaded:", { brands: brands.length, categories: categories.length, dealers: dealers.length })
+        setBrandOptions([{ value: "all", label: "All Brands" }, ...brands.map((b) => ({ value: b.id, label: b.name }))])
+        setCategoryOptions([{ value: "all", label: "All Categories" }, ...categories.map((c) => ({ value: c.id, label: c.name }))])
+        setDealerOptions([{ value: "all", label: "All Dealers" }, ...dealers.map((d) => ({ value: d.id, label: d.business_name }))])
+      } catch (error) {
+        console.error("Admin Products Component - Error loading filter options:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  // Load products when filters change
+  React.useEffect(() => {
+    async function loadProducts() {
+      console.log("Admin Products Component - Starting product load with filters:", { search, brandFilter, categoryFilter, dealerFilter, statusFilter, page })
+      setLoading(true)
+      try {
+        const response = await getAdminProducts(
+          {
+            search: search || undefined,
+            brandId: brandFilter !== "all" ? brandFilter : undefined,
+            categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
+            dealerId: dealerFilter !== "all" ? dealerFilter : undefined,
+            status: statusFilter !== "all" ? statusFilter : undefined,
+          },
+          page,
+          PAGE_SIZE
+        )
+
+        console.log("Admin Products Component - Products loaded successfully:", response)
+        setProducts(response.data)
+        setTotalProducts(response.total)
+        setTotalPages(response.totalPages)
+      } catch (error) {
+        console.error("Admin Products Component - Error loading products:", error)
+        setProducts([])
+        setTotalProducts(0)
+        setTotalPages(1)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProducts()
+  }, [search, brandFilter, categoryFilter, dealerFilter, statusFilter, page])
+
+  const paginated = products
   const paginatedIds = paginated.map((p) => p.id)
 
   const detailProduct = React.useMemo(
@@ -111,38 +177,60 @@ export function ProductManagement() {
     }
   }
 
-  const handleActionConfirm = (reason: string) => {
+  const handleActionConfirm = async (reason: string) => {
     if (!pendingAction) return
     const { action, ids } = pendingAction
-    const now = new Date().toISOString()
 
-    if (action === "delete") {
-      setProducts((prev) => prev.filter((p) => !ids.includes(p.id)))
-    } else {
-      const statusMap: Record<string, ProductStatus | undefined> = {
-        approve: "APPROVED",
-        reject: "REJECTED",
-        archive: "ARCHIVED",
+    try {
+      if (action === "delete") {
+        // Use bulk delete for multiple items
+        if (ids.length > 1) {
+          await bulkDeleteProducts(ids)
+        } else {
+          await deleteProduct(ids[0])
+        }
+      } else if (action === "approve") {
+        // Approve each product individually to send notifications
+        for (const id of ids) {
+          await approveProduct(id)
+        }
+      } else if (action === "reject") {
+        // Reject each product individually to send notifications
+        for (const id of ids) {
+          await rejectProduct(id, reason)
+        }
+      } else if (action === "archive") {
+        // Deactivate each product individually
+        for (const id of ids) {
+          await deactivateProduct(id)
+        }
+      } else if (action === "suspend") {
+        // Suspend each product individually
+        for (const id of ids) {
+          await suspendProduct(id)
+        }
       }
-      const newStatus = statusMap[action]
-      setProducts((prev) =>
-        prev.map((p) => {
-          if (!ids.includes(p.id)) return p
-          const event = {
-            action: action === "request" ? "Changes Requested" : `${action.charAt(0).toUpperCase() + action.slice(1)}ed`,
-            by: "Admin",
-            timestamp: now,
-            ...(reason ? { reason } : {}),
-          }
-          return {
-            ...p,
-            ...(newStatus ? { status: newStatus } : {}),
-            approval_history: [...p.approval_history, event],
-            updated_at: now,
-          }
-        })
+
+      // Reload products after action
+      const response = await getAdminProducts(
+        {
+          search: search || undefined,
+          brandId: brandFilter !== "all" ? brandFilter : undefined,
+          categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
+          dealerId: dealerFilter !== "all" ? dealerFilter : undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        },
+        page,
+        PAGE_SIZE
       )
+
+      setProducts(response.data)
+      setTotalProducts(response.total)
+      setTotalPages(response.totalPages)
+    } catch (error) {
+      console.error("Error performing action:", error)
     }
+
     setPendingAction(null)
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -151,23 +239,100 @@ export function ProductManagement() {
     })
   }
 
-  const handleAddComment = (text: string) => {
-    if (!detailId) return
-    const now = new Date().toISOString()
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === detailId
-          ? {
-              ...p,
-              comments: [...p.comments, { id: crypto.randomUUID(), author: "Admin", text, timestamp: now }],
-              updated_at: now,
-            }
-          : p
+  const handleToggleFeatured = async (id: string) => {
+    try {
+      const result = await toggleProductFeatured(id)
+      if (result.success) {
+        await loadProducts()
+      } else {
+        alert(result.error || "Failed to toggle featured status")
+      }
+    } catch (error: any) {
+      console.error("Toggle featured error:", error)
+      alert(error?.message || "Failed to toggle featured status")
+    }
+  }
+
+  const handleTogglePremium = async (id: string) => {
+    console.log("=== handleTogglePremium CALLED ===", { id })
+    try {
+      const result = await toggleProductPremium(id)
+      console.log("=== toggleProductPremium RESULT ===", result)
+      if (result.success) {
+        await loadProducts()
+      } else {
+        alert(result.error || "Failed to toggle premium status")
+      }
+    } catch (error: any) {
+      console.error("=== Toggle premium CATCH ERROR ===", error)
+      alert(error?.message || "Failed to toggle premium status")
+    }
+  }
+
+  const loadProducts = async () => {
+    setLoading(true)
+    try {
+      const response = await getAdminProducts(
+        {
+          search: search || undefined,
+          brandId: brandFilter !== "all" ? brandFilter : undefined,
+          categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
+          dealerId: dealerFilter !== "all" ? dealerFilter : undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        },
+        page,
+        PAGE_SIZE
       )
-    )
+      setProducts(response.data)
+      setTotalProducts(response.total)
+      setTotalPages(response.totalPages)
+    } catch (error) {
+      console.error("Error loading products:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddComment = async (text: string) => {
+    if (!detailId) return
+    // Comments are not implemented in the current database schema
+    // This is a placeholder for future implementation
+    console.log("Comment functionality not yet implemented in database schema")
   }
 
   const allSelected = paginatedIds.length > 0 && paginatedIds.every((id) => selectedIds.has(id))
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+        className="space-y-6"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Products</h1>
+            <p className="mt-1 text-sm text-slate-500">Moderate, approve, and manage all product listings.</p>
+          </div>
+          <Button className="rounded-full px-4">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Product
+          </Button>
+        </div>
+
+        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+          <div className="h-10 w-full lg:w-64 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-10 w-full lg:w-44 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-10 w-full lg:w-44 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-10 w-full lg:w-48 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-10 w-full lg:w-40 bg-slate-100 rounded-lg animate-pulse" />
+        </div>
+
+        <div className="w-full h-64 rounded-2xl border border-slate-200 bg-white shadow-sm animate-pulse" />
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div
@@ -229,13 +394,13 @@ export function ProductManagement() {
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Price</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Stock</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Featured</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Premium</th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
             </tr>
           </thead>
           <tbody>
             {paginated.map((product) => {
-              const brand = mockBrands.find((b) => b.id === product.brand_id)
-              const category = mockCategories.find((c) => c.id === product.category_id)
               const checked = selectedIds.has(product.id)
               return (
                 <tr key={product.id} className={cn("border-b border-slate-100 transition-colors hover:bg-slate-50/60", checked && "bg-blue-50/40")}>
@@ -243,13 +408,35 @@ export function ProductManagement() {
                     <Checkbox checked={checked} onCheckedChange={() => toggleSelect(product.id)} aria-label={`Select ${product.title}`} />
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-slate-900">{product.title}</td>
-                  <td className="px-4 py-3 text-sm text-slate-600">{brand?.name || "—"}</td>
-                  <td className="px-4 py-3 text-sm text-slate-600">{category?.name || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600">{product.brand_name || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600">{product.category_name || "—"}</td>
                   <td className="px-4 py-3 text-sm text-slate-600">{product.dealer_name}</td>
                   <td className="px-4 py-3 text-sm font-medium text-slate-900">{formatCurrency(product.price)}</td>
                   <td className="px-4 py-3 text-sm text-slate-600">{product.stock}</td>
                   <td className="px-4 py-3">
-                    <Badge className={cn("text-xs capitalize", statusStyles[product.status])}>{product.status.toLowerCase()}</Badge>
+                    <Badge className={statusStyles[product.status] || "bg-slate-100 text-slate-700"}>{product.status}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 rounded-full ${product.featured ? "text-amber-500" : "text-slate-400"}`}
+                      onClick={() => handleToggleFeatured(product.id)}
+                    >
+                      <Star className={`h-4 w-4 ${product.featured ? "fill-amber-500" : ""}`} />
+                    </Button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 rounded-full ${product.premium ? "text-purple-500" : "text-slate-400"}`}
+                      onClick={() => handleTogglePremium(product.id)}
+                      aria-label={product.premium ? "Remove from Premium Products" : "Add to Premium Products"}
+                      title={product.premium ? "Remove from Premium Products" : "Add to Premium Products"}
+                    >
+                      <Diamond className={`h-4 w-4 ${product.premium ? "fill-purple-500" : ""}`} />
+                    </Button>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
@@ -262,8 +449,8 @@ export function ProductManagement() {
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-rose-600" onClick={() => openAction("reject", [product.id])}>
                         <XCircle className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-amber-600" onClick={() => openAction("request", [product.id])}>
-                        <MessageSquare className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-orange-600" onClick={() => openAction("suspend", [product.id])}>
+                        <Power className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-600" onClick={() => openAction("archive", [product.id])}>
                         <Archive className="h-4 w-4" />
@@ -280,15 +467,15 @@ export function ProductManagement() {
         </table>
       </div>
 
-      {filtered.length > 0 && (
+      {totalProducts > 0 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500">Showing {paginated.length} of {filtered.length} products</p>
+          <p className="text-sm text-slate-500">Showing {paginated.length} of {totalProducts} products</p>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0">
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="h-8 w-8 p-0">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium text-slate-600">Page {currentPage} of {pageCount}</span>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={currentPage === pageCount} className="h-8 w-8 p-0">
+            <span className="text-sm font-medium text-slate-600">Page {page} of {totalPages}</span>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="h-8 w-8 p-0">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

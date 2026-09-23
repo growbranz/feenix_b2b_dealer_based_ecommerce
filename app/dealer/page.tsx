@@ -1,7 +1,7 @@
 import { getCurrentUserProfile } from "@/lib/auth/auth.helpers"
 import { redirect } from "next/navigation"
 import { DealerDashboardPage } from "@/components/dealer/dashboard-page"
-import { getDealerDashboardStats, getDealerRecentProducts, getDealerProductStatusData } from "@/lib/dealer/dashboard-service"
+import { getDealerDashboardStats, getDealerRecentProducts, getDealerProductStatusData, getDealerMonthlyUploads, getDealerInventoryByCategory } from "@/lib/dealer/dashboard-service"
 
 export default async function DealerPage() {
   const userProfile = await getCurrentUserProfile()
@@ -12,10 +12,12 @@ export default async function DealerPage() {
   const dealerId = userProfile.profile.id
 
   // Fetch real dashboard data
-  const [stats, recentProducts, productStatusData] = await Promise.all([
+  const [stats, recentProducts, productStatusData, monthlyUploads, inventoryByCategory] = await Promise.all([
     getDealerDashboardStats(),
     getDealerRecentProducts(7),
     getDealerProductStatusData(),
+    getDealerMonthlyUploads(),
+    getDealerInventoryByCategory(),
   ])
 
   return (
@@ -23,6 +25,8 @@ export default async function DealerPage() {
       stats={stats}
       recentProducts={recentProducts}
       productStatusData={productStatusData}
+      monthlyUploads={monthlyUploads}
+      inventoryByCategory={inventoryByCategory}
     />
   )
 }

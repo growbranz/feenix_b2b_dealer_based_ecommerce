@@ -46,6 +46,7 @@ interface AddProductFormProps {
   isLoading?: boolean
   initialValues?: any
   mode?: "add" | "edit"
+  productId?: string // For edit mode
 }
 
 export function AddProductForm({
@@ -56,6 +57,7 @@ export function AddProductForm({
   models = [],
   isLoading = false,
   initialValues,
+  productId,
   mode = "add",
 }: AddProductFormProps) {
   const [currentStep, setCurrentStep] = React.useState(0)
@@ -370,6 +372,7 @@ export function AddProductForm({
                   images={formValues.images}
                   onChange={(images) => methods.setValue("images", images)}
                   maxImages={5}
+                  productId={mode === "edit" ? productId : undefined}
                 />
               </CardContent>
             </Card>

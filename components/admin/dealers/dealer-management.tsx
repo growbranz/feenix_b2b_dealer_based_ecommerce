@@ -8,8 +8,16 @@ import { DealerFilters } from "./dealer-filters"
 import { DealerTable, SortKey, DealerAction } from "./dealer-table"
 import { DealerDetailDrawer } from "./dealer-detail-drawer"
 import { DealerRejectDialog } from "./dealer-reject-dialog"
-import { mockDealers, AdminDealer } from "./data"
+import { AdminDealer, statusOptions } from "./data"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  getDealers,
+  approveDealer,
+  rejectDealer as rejectDealerAction,
+  suspendDealer,
+  activateDealer,
+  deleteDealer,
+} from "@/lib/admin/dealers-service"
 
 interface ConfirmDialogState {
   open: boolean
@@ -23,7 +31,10 @@ interface ConfirmDialogState {
 const PAGE_SIZE = 5
 
 export function DealerManagement() {
-  const [dealers, setDealers] = React.useState<AdminDealer[]>([...mockDealers])
+  const [dealers, setDealers] = React.useState<AdminDealer[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
+
   const [search, setSearch] = React.useState("")
   const [statusFilter, setStatusFilter] = React.useState("all")
   const [stateFilter, setStateFilter] = React.useState("all")
@@ -43,6 +54,40 @@ export function DealerManagement() {
     onConfirm: () => {},
   })
 
+  const loadDealers = React.useCallback(async () => {
+    setIsLoading(true)
+    setLoadError(null)
+    try {
+      const data = await getDealers()
+      setDealers(data)
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load dealers")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadDealers()
+  }, [loadDealers])
+
+  const stateOptions = React.useMemo(() => {
+    const states = Array.from(
+      new Set(dealers.map((d) => d.state).filter((s) => s && s !== "—"))
+    ).sort()
+    return [{ value: "all", label: "All States" }, ...states.map((s) => ({ value: s, label: s }))]
+  }, [dealers])
+
+  const businessTypeOptions = React.useMemo(() => {
+    const types = Array.from(
+      new Set(dealers.map((d) => d.business_type).filter((t) => t && t !== "—"))
+    ).sort()
+    if (types.length === 0) {
+      return [{ value: "all", label: "All Types" }]
+    }
+    return [{ value: "all", label: "All Types" }, ...types.map((t) => ({ value: t, label: t }))]
+  }, [dealers])
+
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase()
     const filteredBySearch = dealers.filter((d) => {
@@ -50,6 +95,7 @@ export function DealerManagement() {
         !q ||
         d.business_name.toLowerCase().includes(q) ||
         d.owner_name.toLowerCase().includes(q) ||
+        d.email.toLowerCase().includes(q) ||
         d.city.toLowerCase().includes(q)
       const matchesStatus = statusFilter === "all" || d.status === statusFilter
       const matchesState = stateFilter === "all" || d.state === stateFilter
@@ -68,6 +114,12 @@ export function DealerManagement() {
   const currentPage = Math.min(page, pageCount)
   const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
+  React.useEffect(() => {
+    if (page > pageCount) {
+      setPage(pageCount)
+    }
+  }, [page, pageCount])
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDirection((d) => (d === "asc" ? "desc" : "asc"))
@@ -77,21 +129,11 @@ export function DealerManagement() {
     }
   }
 
-  const updateStatus = (id: string, status: AdminDealer["status"], reason?: string) => {
-    setDealers((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, status, ...(reason !== undefined ? { rejection_reason: reason } : {}) } : d))
-    )
-  }
-
-  const removeDealer = (id: string) => {
-    setDealers((prev) => prev.filter((d) => d.id !== id))
-  }
-
   const openConfirm = (config: Omit<ConfirmDialogState, "open">) => {
     setConfirmDialog({ ...config, open: true })
   }
 
-  const handleAction = (action: DealerAction, dealer: AdminDealer) => {
+  const handleAction = async (action: DealerAction, dealer: AdminDealer) => {
     switch (action) {
       case "view":
       case "edit":
@@ -103,7 +145,14 @@ export function DealerManagement() {
           description: `Are you sure you want to approve ${dealer.business_name}?`,
           confirmText: "Approve",
           variant: "default",
-          onConfirm: () => updateStatus(dealer.id, "APPROVED"),
+          onConfirm: async () => {
+            try {
+              await approveDealer(dealer.id)
+              await loadDealers()
+            } catch (err) {
+              setLoadError(err instanceof Error ? err.message : "Failed to approve dealer")
+            }
+          },
         })
         break
       case "reject":
@@ -115,7 +164,14 @@ export function DealerManagement() {
           description: `Suspend ${dealer.business_name}? They will no longer be able to list products.`,
           confirmText: "Suspend",
           variant: "destructive",
-          onConfirm: () => updateStatus(dealer.id, "SUSPENDED"),
+          onConfirm: async () => {
+            try {
+              await suspendDealer(dealer.id)
+              await loadDealers()
+            } catch (err) {
+              setLoadError(err instanceof Error ? err.message : "Failed to suspend dealer")
+            }
+          },
         })
         break
       case "activate":
@@ -124,7 +180,14 @@ export function DealerManagement() {
           description: `Reactivate ${dealer.business_name}?`,
           confirmText: "Activate",
           variant: "default",
-          onConfirm: () => updateStatus(dealer.id, "APPROVED"),
+          onConfirm: async () => {
+            try {
+              await activateDealer(dealer.id)
+              await loadDealers()
+            } catch (err) {
+              setLoadError(err instanceof Error ? err.message : "Failed to activate dealer")
+            }
+          },
         })
         break
       case "delete":
@@ -133,15 +196,28 @@ export function DealerManagement() {
           description: `Permanently delete ${dealer.business_name}? This cannot be undone.`,
           confirmText: "Delete",
           variant: "destructive",
-          onConfirm: () => removeDealer(dealer.id),
+          onConfirm: async () => {
+            try {
+              await deleteDealer(dealer.id)
+              await loadDealers()
+            } catch (err) {
+              setLoadError(err instanceof Error ? err.message : "Failed to delete dealer")
+            }
+          },
         })
         break
     }
   }
 
-  const handleRejectConfirm = (reason: string) => {
+  const handleRejectConfirm = async (reason: string) => {
     if (rejectDealer) {
-      updateStatus(rejectDealer.id, "REJECTED", reason)
+      try {
+        await rejectDealerAction(rejectDealer.id, reason)
+        setRejectDealer(null)
+        await loadDealers()
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : "Failed to reject dealer")
+      }
     }
   }
 
@@ -164,21 +240,36 @@ export function DealerManagement() {
         status={statusFilter}
         state={stateFilter}
         businessType={businessTypeFilter}
+        statusOptions={statusOptions}
+        stateOptions={stateOptions}
+        businessTypeOptions={businessTypeOptions}
         onSearchChange={(v) => { setSearch(v); setPage(1) }}
         onStatusChange={(v) => { setStatusFilter(v); setPage(1) }}
         onStateChange={(v) => { setStateFilter(v); setPage(1) }}
         onBusinessTypeChange={(v) => { setBusinessTypeFilter(v); setPage(1) }}
       />
 
-      <DealerTable
-        dealers={paginated}
-        sortKey={sortKey}
-        sortDirection={sortDirection}
-        onSort={handleSort}
-        onAction={handleAction}
-      />
+      {loadError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
 
-      {filtered.length > 0 && (
+      {isLoading ? (
+        <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 text-slate-500">
+          <p className="text-sm font-medium">Loading dealers...</p>
+        </div>
+      ) : (
+        <DealerTable
+          dealers={paginated}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          onAction={handleAction}
+        />
+      )}
+
+      {!isLoading && filtered.length > 0 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-slate-500">
             Showing {paginated.length} of {filtered.length} dealers

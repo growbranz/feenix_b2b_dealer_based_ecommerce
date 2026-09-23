@@ -62,19 +62,19 @@ const AlertDialogContent = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, ref) => {
   const { open, onOpenChange } = React.useContext(AlertDialogContext)
-  
+
   if (!open) return null
-  
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/80"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
       <div
         ref={ref}
         className={cn(
-          "relative z-50 grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
+          "relative z-50 w-full max-w-[560px] max-h-[90vh] overflow-y-auto bg-white border border-slate-200 rounded-2xl shadow-2xl p-6",
           className
         )}
         {...props}

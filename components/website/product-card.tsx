@@ -13,18 +13,21 @@ export interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const isOutOfStock = product.stock === 0
   const imageUrl = product.primary_image || product.images[0]?.image_url
+  
+  // Validate image URL is a valid HTTP/HTTPS URL
+  const isValidImageUrl = imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))
 
   return (
     <Link href={`/products/${product.slug}`}>
       <Card className="group cursor-pointer overflow-hidden h-full flex flex-col rounded-2xl border-slate-100 bg-white shadow-[0_4px_24px_-10px_rgba(30,41,59,0.08)] hover:shadow-[0_24px_48px_-16px_rgba(37,99,235,0.13)] hover:-translate-y-1 transition-all duration-300">
         <CardContent className="p-5 flex-1">
-          <div className="aspect-square bg-slate-50 rounded-2xl mb-5 overflow-hidden relative">
-            {imageUrl ? (
+          <div className="aspect-square bg-slate-50 rounded-2xl mb-5 overflow-hidden relative flex items-center justify-center">
+            {isValidImageUrl ? (
               <Image
                 src={imageUrl}
                 alt={product.title}
                 fill
-                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                className="object-contain p-4 group-hover:scale-110 transition-transform duration-500"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
               />
             ) : (

@@ -24,11 +24,6 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  // Refresh session if needed
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
   const { pathname } = req.nextUrl
 
   // Define protected routes
@@ -36,10 +31,25 @@ export async function middleware(req: NextRequest) {
   const authRoutes = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password']
   const publicRoutes = ['/']
 
-  // Check if current path is protected
+  // Check if current path is protected or auth route
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
   const isPublicRoute = publicRoutes.includes(pathname)
+
+  // Skip auth check for public routes to avoid Supabase connectivity issues
+  if (isPublicRoute) {
+    return res
+  }
+
+  // Refresh session if needed (only for protected/auth routes)
+  let session = null
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    session = sessionData.session
+  } catch (error) {
+    // If Supabase is unreachable, continue without session
+    console.error('Middleware auth session error:', error instanceof Error ? error.message : error)
+  }
 
   // Redirect unauthenticated users from protected routes to login
   if (isProtectedRoute && !session) {
@@ -49,11 +59,17 @@ export async function middleware(req: NextRequest) {
   // Redirect authenticated users from auth routes to appropriate dashboard
   if (isAuthRoute && session) {
     // Fetch user profile to determine role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .single()
+    let profile = null
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+      profile = profileData
+    } catch (error) {
+      console.error('Middleware profile fetch error:', error instanceof Error ? error.message : error)
+    }
 
     if (profile) {
       const profileData = profile as { role: string }
@@ -68,11 +84,17 @@ export async function middleware(req: NextRequest) {
 
   // Role-based access control
   if (session && isProtectedRoute) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .single()
+    let profile = null
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+      profile = profileData
+    } catch (error) {
+      console.error('Middleware role check error:', error instanceof Error ? error.message : error)
+    }
 
     if (profile) {
       const profileData = profile as { role: string }

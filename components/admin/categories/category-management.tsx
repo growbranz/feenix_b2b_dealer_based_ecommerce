@@ -15,8 +15,24 @@ import { createClient } from "@/lib/supabase/client"
 import { AdminCategory, CategoryStatus, generateSlug } from "./data"
 import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, Upload } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { revalidateCategoryPages } from "@/lib/categories/actions"
 
 const PAGE_SIZE = 5
+
+const categoryIcons = [
+  { value: "camera", label: "Camera" },
+  { value: "battery", label: "Battery" },
+  { value: "monitor", label: "Display" },
+  { value: "speaker", label: "Speaker" },
+  { value: "zap", label: "Charging" },
+  { value: "cpu", label: "Motherboard" },
+  { value: "fingerprint", label: "Fingerprint" },
+  { value: "smartphone", label: "Phone" },
+  { value: "mic", label: "Microphone" },
+  { value: "package", label: "Package" },
+  { value: "settings", label: "Settings" },
+  { value: "wrench", label: "Tools" },
+]
 
 const emptyCategory: AdminCategory = {
   id: "",
@@ -142,6 +158,8 @@ export function CategoryManagement() {
         slug: form.slug || generateSlug(form.name),
         description: form.description || null,
         image: form.image_url || null,
+        icon: form.icon_url || null,
+        display_order: form.display_order || 0,
         status: form.status,
       }
 
@@ -152,6 +170,8 @@ export function CategoryManagement() {
         const { error } = await (supabase.from("categories") as any).insert([payload])
         if (error) throw error
       }
+      
+      revalidateCategoryPages()
       await loadCategories()
       closeDrawer()
     } catch (error: any) {
@@ -170,6 +190,7 @@ export function CategoryManagement() {
       const supabase = createClient()
       const { error } = await (supabase.from("categories") as any).update({ status: newStatus }).eq("id", id)
       if (error) throw error
+      revalidateCategoryPages()
       await loadCategories()
     } catch (error: any) {
       console.error("Toggle status error:", error)
@@ -183,6 +204,7 @@ export function CategoryManagement() {
       const supabase = createClient()
       const { error } = await supabase.from("categories").delete().eq("id", deleteId)
       if (error) throw error
+      revalidateCategoryPages()
       setDeleteId(null)
       await loadCategories()
     } catch (error: any) {
@@ -377,6 +399,18 @@ export function CategoryManagement() {
               type="number"
               value={form.display_order}
               onChange={(e) => updateForm("display_order", Number(e.target.value))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="icon">Icon</Label>
+            <FilterSelect
+              id="icon"
+              value={form.icon_url || ""}
+              onChange={(e) => updateForm("icon_url", e.target.value || null)}
+              options={[
+                { value: "", label: "No Icon" },
+                ...categoryIcons,
+              ]}
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
