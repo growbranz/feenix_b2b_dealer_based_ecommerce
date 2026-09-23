@@ -6,9 +6,18 @@ import type { Database } from '@/types'
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
 
+  // Validate environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase environment variables in middleware')
+    return res
+  }
+
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -65,7 +74,7 @@ export async function middleware(req: NextRequest) {
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
-        .single()
+        .maybeSingle()
       profile = profileData
     } catch (error) {
       console.error('Middleware profile fetch error:', error instanceof Error ? error.message : error)
@@ -90,7 +99,7 @@ export async function middleware(req: NextRequest) {
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
-        .single()
+        .maybeSingle()
       profile = profileData
     } catch (error) {
       console.error('Middleware role check error:', error instanceof Error ? error.message : error)
